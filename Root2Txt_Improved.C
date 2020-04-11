@@ -37,12 +37,42 @@
     42->45 [54->57] fNbytesInfo = Number of bytes in TStreamerInfo record
     46->63 [58->75] fUUID       = Universal Unique ID
 
+===============================================================================
+
+Dans Notes:
+
+* The compression methods used: 
+	- ZLIB is recommended to be used with compression level 1 [101]
+	- LZMA is recommended to be used with compression level 7-8 (higher is better, 
+  	  since in the case of LZMA we don't care about compression/decompression speed) [207 - 208]
+	- LZ4 is recommended to be used with compression level 4 [404]
+	- ZSTD is recommended to be used with compression level 5 [505]
+
+  This means that the automatic setting [101] compresses the data using the ZLIB compression algorithm. 
+  To decompress this we need to use the functions within "zlib.h" as detailed on their GitHub: https://github.com/madler/zlib 
+
+* InflateData coopted from: https://gist.github.com/arq5x/5315739
+
+* TDirectories are gonna be a massive pain...	
+
+* Compile with:  gcc Root2Txt_Improved.C -lz -o R2T
+
+* Run with: ./R2T RootFile.root
+
 */
+
+
+
+
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <assert.h>
+#include "zlib.h"
+
+#define CHUNK 16384
 
 int BytesRead = 0;
 
@@ -60,6 +90,47 @@ int HexToInt(unsigned char * Hex, int num){
 
 	return fin;
 }
+
+ 
+unsigned char* InflateData(unsigned char * Input, int LenInput, int LenOutput){ //THIS DOESN'T WORK - I have no idea why, have to investigate further...
+
+	unsigned char Output[LenOutput];
+
+	printf("The input  is %lu bytes long. Given as %i .\n",sizeof(Input), LenInput);
+	printf("The output is %lu bytes long. Given as %i .\n",sizeof(Output), LenOutput);
+    printf("Input is: %.15s\n", Input);
+
+    // STEP 2.
+    // inflate b into c
+    // zlib struct
+    z_stream infstream;
+    infstream.zalloc = Z_NULL;
+    infstream.zfree = Z_NULL;
+    infstream.opaque = Z_NULL;
+
+    // setup "b" as the input and "c" as the compressed output
+    infstream.avail_in = (uInt)LenInput; // size of input
+    infstream.next_in = (Bytef *)Input; // input char array
+    infstream.avail_out = (uInt)LenOutput; // size of output
+    infstream.next_out = (Bytef *)Output; // output char array
+     
+    // the actual DE-compression work.
+    inflateInit(&infstream);
+    inflate(&infstream, Z_NO_FLUSH);
+    inflateEnd(&infstream);
+     
+    printf("Uncompressed size is: %lu\n", sizeof(Output));
+    printf("Uncompressed string is: %.15s\n", Output);
+    printf("Full Output is:\n");
+	for(int ik = 0; ik < 30; ik++) printf("%c", Output[ik]);
+    printf("\n");
+
+	return Output;
+
+}
+
+
+
 
 
 class ROOTHeader {
@@ -80,7 +151,7 @@ class ROOTHeader {
 		printf("nfree       = %u\n", nfree);
 		printf("fNbytesName = %u\n", fNbytesName);
 		printf("fUnits      = %u\n", fUnits);
-		printf("fCompress   = %f\n", fCompress);
+		printf("fCompress   = %i\n", fCompress);
 		printf("fSeekInfo   = %u\n", fSeekInfo);
 		printf("fNbytesInfo = %u\n", fNbytesInfo);
 		printf("fUUID       = %lu\n", fUUID);
@@ -128,7 +199,7 @@ class ROOTHeader {
 		BytesRead += 1;
 		
 		fread(buffer,sizeof(buffer),1,infile);
-		fCompress = (float) HexToInt(buffer, 4); 
+		fCompress = HexToInt(buffer, 4); 
 		BytesRead += 4;
 		
 		fread(buffer,sizeof(buffer),1,infile);
@@ -161,7 +232,7 @@ class ROOTHeader {
 	unsigned int nfree;
 	unsigned int fNbytesName;
 	char fUnits;
-	float fCompress;
+	int fCompress;
 	unsigned int fSeekInfo;
 	unsigned int fNbytesInfo;
 	long fUUID;
@@ -389,6 +460,7 @@ struct KeyHeader {
 	}
 };
 
+
 #ifndef __CINT__ 
 
 int main(int argc,char **argv){
@@ -398,6 +470,7 @@ int main(int argc,char **argv){
 
 	//============================================= Read Data
 
+	int BytesTotal = 0;
 //	unsigned char buffer[4];
 	ROOTHeader RHead;
 	FileHeader Header;
@@ -416,7 +489,7 @@ int main(int argc,char **argv){
 		BytesRead = num;
 	}
 
-
+	BytesTotal = BytesTotal + BytesRead;
 	unsigned int tempbytes = BytesRead;
 	BytesRead = 0;
 	Header.Read(infile);
@@ -435,39 +508,45 @@ int main(int argc,char **argv){
 	
 	//char junk2[1];
 	//fread(junk2, sizeof(junk2),21 , infile); 
+	BytesTotal = BytesTotal + BytesRead;
 
 	BytesRead = 0;
 	KeyHeader Header2;
 	Header2.Read(infile);
 	Header2.Print();
+	BytesTotal = BytesTotal + BytesRead;
 
 	printf("Bytes read = %i\n", BytesRead);	
-/*
-	BytesRead = 0;
-	KeyHeader Header3;
-	Header3.Read(infile);
-	Header3.Print();
+	printf("Total bytes read = %i\n\n", BytesTotal);	
 
-	if(strcmp((const char*)Header2.ClassName,"TH1D")==0){
-		int num3 = Header2.NBytes;
-		double Data[num3 / 8];
-		unsigned char DataBuffer[8];
 
-		for(int k=0; k < (num3 / 8); k++){
-			fread(DataBuffer, sizeof(DataBuffer), 1, infile); 
-		//	Data[k] = (double) HexToInt(DataBuffer, 8);
-			printf("%s\n", DataBuffer);
-		}
-		BytesRead = Header2.NBytes;
+//================================================================================================
+//========================================================================= THIS AREA IS BROKEN ==
+//================================================================================================
 
-		for(int count=0; count < (num3 / 8); count++){
-			printf("%f\n", Data[count]);
-		}
+	unsigned char Input[Header2.NBytes - Header2.KeyLen];
+	//unsigned char JunkBuffer[16];
 
-	}
-*/
+	//int check1 = fread(JunkBuffer, sizeof(JunkBuffer), 1, infile);
+	//int check = fread(Input, sizeof(Input), 1, infile);
+	int check = fread(&Input, sizeof(unsigned char), (Header2.NBytes - Header2.KeyLen), infile);
+	BytesTotal = BytesTotal + Header2.NBytes - Header2.KeyLen;
 
-	printf("Bytes read = %i\n", BytesRead);	
+	printf("Size of Input outside inflate = %lu\n", sizeof(Input));
+	printf("Size of check = %i\n", check);
+    printf("Input is:\n");
+	for(int ik = 0; ik < (Header2.NBytes - Header2.KeyLen); ik++) printf("%c", Input[ik]);
+    printf("\n");
+ 
+	unsigned char * Output = InflateData(Input, (Header2.NBytes - Header2.KeyLen), Header2.ObjLen);
+
+//	printf("%s",Output);
+
+//================================================================================================
+//================================================================================================
+//================================================================================================
+
+	printf("Total bytes read = %i\n\n", BytesTotal);	
 
 	fclose(infile);
 
