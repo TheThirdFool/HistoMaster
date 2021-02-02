@@ -13,9 +13,10 @@
 
 // FUNCTION LIST:
 
-// Histo(double * a, double * b, int no)  -  Constructor
-// Read(FILE * infile, int BytesTotal)    -  Read data from file
-
+// Histo(double * a, double * b, int no)    -  Constructor
+// int Read(FILE * infile, int BytesTotal)  -  Read data from file
+// int ReadTXT(FILE * infile)               -  Read data from a txt file
+// int ReadString(char* String, int row, double * dat) - Split string into doubles 
 
 
 
@@ -33,6 +34,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "zlib.h"
+#include <vector>
 
 // == CODE ==
 
@@ -40,11 +42,11 @@
 
 // DFH - Constructor copying across pointers into Coord
 Histo::Histo(double * a, double * b, int no){
-	X = (double*)malloc(no * sizeof(double));
-	Y = (double*)malloc(no * sizeof(double));
+//	X = (double*)malloc(no * sizeof(double));
+//	Y = (double*)malloc(no * sizeof(double));
 
-	memcpy(X, a, no * sizeof(double));
-	memcpy(Y, b, no * sizeof(double));
+//	memcpy(X, a, no * sizeof(double));
+//	memcpy(Y, b, no * sizeof(double));
 	NoBins = no;
 }
 
@@ -150,11 +152,40 @@ int Histo::Read(FILE *infile, int BytesTotal){
 }
 
 
+// ===========
 
 
 
+int Histo::ReadString(char* String, int row, double * dat){
+	char * Holder = NULL;
+	char *pEnd;
+
+	dat[0] = strtod(String, &pEnd);
+	pEnd++;
+	dat[1] = strtod(pEnd, NULL);
+	return 1;
+}
 
 
+int Histo::ReadTXT(FILE * infile){
+	char * line = NULL;
+	size_t len = 0;
+	ssize_t read;
+
+	// Loop over all the lines in the file
+	int  i = 0;
+	while((read = getline(&line, &len, infile)) != -1) {
+		// Reat the trace data
+		double dat[2];
+		ReadString(line, 1, dat);	
+
+		X.push_back(dat[0]);
+		Y.push_back(dat[1]);	
+		i++;
+	}
+
+	return i;
+}
 
 
 

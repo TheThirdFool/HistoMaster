@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <vector>
 
 #include "KeyHeader.hpp"
 
@@ -31,26 +32,27 @@ class Histo{
 
 	public:
 
+	std::vector<double> X;
+	std::vector<double> Y;
+
 	// Empty Constructor
 	Histo(){}
-
 
 	// Destructor
 	~Histo(){}
 
-
 	// FUNCTIONS ====
-
 	Histo(double * a, double * b, int no);
 	int Read(FILE * infile, int BytesTotal);
+	int ReadTXT(FILE * infile);
 	
-
 
 	private:
 		
-		double * X;
-		double * Y;
-		int NoBins;
+	int NoBins;
+
+
+	int ReadString(char* String, int row, double * dat); 
 
 };
 

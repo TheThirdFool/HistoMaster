@@ -1,0 +1,28 @@
+#!/bin/bash
+
+
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+CY='\033[0;36m'
+
+echo ""
+echo -e "                 "-- Compiling ${RED}HistoMaster ${NC}--
+echo ""
+
+CXX=clang++
+
+INC="Classes/FileHeader.hpp Classes/ROOTHeader.hpp Classes/KeyHeader.hpp Classes/Histo_Library.cpp Classes/Histo.hpp"
+OBJS="Classes/FileHeader.o Classes/ROOTHeader.o Classes/KeyHeader.o Classes/Histo.o Classes/Histo_Library.o"
+
+echo -e "[${CY}compiling${NC}] $CXX -c " $INC
+$CXX -c $INC
+
+echo -e "[${CY}compiling${NC}] $CXX Root2Txt_Improved.C -o RT" $OBJS
+$CXX Root2Txt_Improved.cxx -o RT -lz Histo_Library.o 
+
+
+
+
+echo
+echo -e ${RED}HistoMster${NC} is compiled.
+echo
