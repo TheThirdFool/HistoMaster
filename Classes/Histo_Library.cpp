@@ -38,7 +38,6 @@
 
 
 
-
 // DFH - Constructor copying across pointers into Coord
 Histo::Histo(double * a, double * b, int no){
 	X = (double*)malloc(no * sizeof(double));
@@ -50,6 +49,8 @@ Histo::Histo(double * a, double * b, int no){
 }
 
 
+
+// DFH - Read from the infile pointer. Can't decode data yet - but large memory leak fix may have cleared the way for this.
 int Histo::Read(FILE *infile, int BytesTotal){ 
 
 	int BytesRead = 0;
