@@ -18,6 +18,8 @@
 // int ReadTXT(FILE * infile)               -  Read data from a txt file
 // int ReadString(char* String, int row, double * dat) - Split string into doubles 
 
+//double Integrate()
+//double Integrate(double low, double high)
 
 
 
@@ -187,6 +189,41 @@ int Histo::ReadTXT(FILE * infile){
 	return i;
 }
 
+
+//========= PD =========
+
+double Histo::Integrate(){
+	double sum = 0.0; 
+	for(int i =0; i<X.size();i++){
+		sum += Y[i]; 
+	}
+	return sum; 
+}
+
+
+double Histo::Integrate(double low, double high){
+	int start = 0;  
+	double sum_r = 0.0; 
+
+	for(int j = 0; j<X.size() ;j++){ 
+		if(X[j] >= low){
+			start = j; 
+			printf("[%.02f] at bin = %i\n",low,j);
+			break;
+		}
+	}
+	for(int j = start; j<X.size();j++){ 
+		
+		sum_r += Y[j]; 
+
+		if(X[j] >= high){
+			printf("[%.02f] at bin = %i\n",high,j);
+			break;  	
+		}
+	}
+	
+	return sum_r; 
+}
 
 
 

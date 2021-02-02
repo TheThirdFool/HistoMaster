@@ -46,6 +46,8 @@ class Histo{
 	int Read(FILE * infile, int BytesTotal);
 	int ReadTXT(FILE * infile);
 	
+	double Integrate();
+	double Integrate(double low, double high);
 
 	private:
 		
