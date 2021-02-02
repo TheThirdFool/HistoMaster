@@ -19,10 +19,7 @@ class ROOTHeader {
 
 
 	int GetfBegin() {return fBegin;}
-	int GetfEnd() {
-		printf("fEnd =====================> %i\n",fEnd);
-		return fEnd;
-	}
+	int GetfEnd() {return fEnd;}
 	int GetBytesRead(){return BytesRead;}
 
 	void Print(){
@@ -55,6 +52,7 @@ class ROOTHeader {
 		unsigned char buffer[4];
 		
 		fread(DeclareROOT,sizeof(buffer),1,infile);		
+		DeclareROOT[4] = '\0';
 		BytesRead += 4;
 
 		fread(buffer,sizeof(buffer),1,infile);
@@ -115,7 +113,7 @@ class ROOTHeader {
 
 	private:
 
-	char DeclareROOT[4];
+	char DeclareROOT[5];
 	unsigned int fVersion;
 	unsigned int fBegin;
 	//char fBegin[4];

@@ -68,10 +68,10 @@ Dans Notes:
 #include <assert.h>
 #include "zlib.h"
 
-#include "FileHeader.hpp"
-#include "ROOTHeader.hpp"
-#include "KeyHeader.hpp"
-#include "Histo.hpp"
+#include "Classes/FileHeader.hpp"
+#include "Classes/ROOTHeader.hpp"
+#include "Classes/KeyHeader.hpp"
+#include "Classes/Histo.hpp"
 
 #define CHUNK 16384
 
@@ -132,17 +132,19 @@ int main(int argc,char **argv){
 	ROOTHeader RHead;
 
 	BytesRead = RHead.Read(infile);
+	int RfEnd;
+	char junk[CHUNK];
+	junk[0] = '\0';
+	char junk2[CHUNK];
+	junk2[0] = '\0';
+	RfEnd = RHead.GetfEnd();
 	RHead.Print();
-
-//	int rend;
-//	rend = RHead.GetfEnd();
 	
 	printf("Bytes read = %u\n", BytesRead);
+	int num = RHead.GetfBegin();
 
-	if(BytesRead < RHead.GetfBegin()){
-		char junk[1];
-		int num = RHead.GetfBegin();
-		fread(junk, sizeof(junk), (num - BytesRead) , infile);
+	if(BytesRead < num){
+		fread(&junk, sizeof(char), (num - BytesRead) , infile);
 		//printf("things = %u\n", RHead.GetfBegin());
 		//printf("num    = %u\n", num);
 		BytesRead = num;
@@ -160,8 +162,7 @@ int main(int argc,char **argv){
 	
 	if(strcmp((const char*)Header.ClassName,"TFile")==0){
 		int num2 = Header.NBytes;
-		char junk2[1];
-		fread(junk2, sizeof(junk2), (num2 - BytesRead), infile); 
+		fread(&junk2, sizeof(char), (num2 - BytesRead), infile); 
 		BytesRead = Header.NBytes;
 		//printf("num2 = %i\n", Header.NBytes);
 	}
@@ -173,21 +174,22 @@ int main(int argc,char **argv){
 	// READ HISTOGRAMS ==========
 
 	int count =0;	
-	for(int hist = 0; hist < 2; hist++){
+	for(int hist = 0; hist < 15; hist++){
 		Histo histTest;
 		BytesTotal += histTest.Read(infile, 0);
 		count++;
-	printf("TOTAL BYTES READ = %i / %i\n", BytesTotal,RHead.GetfEnd());
 
-		if(BytesTotal >= RHead.GetfEnd()){
-			printf("Breaking %i > %i\n", BytesTotal, RHead.GetfEnd());
+		if(BytesTotal >= RfEnd){
+			printf("Breaking %i > %i\n", BytesTotal, RfEnd);
 			break;
 		}
 
 	}
-	
+
+	printf("RfEnd = %i\n", RfEnd);	
 	printf("TOTAL BYTES READ = %i\n", BytesTotal);
 	printf("TOTAL HISTS READ = %i\n", count);
+
 
 
 //	BytesRead = 0;
