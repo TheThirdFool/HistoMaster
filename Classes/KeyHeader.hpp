@@ -11,6 +11,14 @@ class KeyHeader {
 
 	public:
 
+	// DFH - Constructor, wipe all arrays so they don't get overwritten
+	KeyHeader(){
+		ClassName[0] = '\0';
+		ObjName[0]   = '\0';
+		Title[0]     = '\0';
+	}
+
+	// DFH - Print the KeyHeader Data
 	void Print(){
 		printf("\n"); 
 		printf("NBytes     = %u\n", NBytes);
@@ -30,23 +38,8 @@ class KeyHeader {
 		printf("\n");
 	}
 
-	int HexToInt(unsigned char * Hex, int num){
-		int fin = 0;
-		for(int i = 1; i <= num; i++){
-			fin += pow(16, (i-1)*2) * Hex[num - i]; 
-		}
 
-		return fin;
-	}
-
-//	27->27 [35->35] lname     = Number of bytes in the class name
-//	28->.. [36->..] ClassName = Object Class Name
-//	..->..          lname     = Number of bytes in the object name
-//	..->..          Name      = lName bytes with the name of the object
-//	..->..          lTitle    = Number of bytes in the object title
-//	..->..          Title     = Title of the object
-//	----->          DATA      = Data bytes associated to the object
-
+	// DFH - Read the KeyHeader structure from an infile
 	int Read(FILE * infile){
 		unsigned char buffer[4];
 		unsigned char buffer2[2];
@@ -112,12 +105,16 @@ class KeyHeader {
 		fread(TitleBuffer,sizeof(TitleBuffer),1,infile);
 		for(int j=0; j<lTitle; j++) Title[j] = TitleBuffer[j]; 
 		BytesRead += lTitle;
+		Title[lTitle] = '\0';
+
 		return BytesRead;
 
 	}
 
 	int GetBytesRead(){return BytesRead;}
 
+
+	// These should be moved to private soon
 	unsigned int NBytes;
 	unsigned short Version;
 	unsigned int ObjLen;
@@ -133,6 +130,24 @@ class KeyHeader {
 	unsigned char lTitle;
 	unsigned char Title[256];
 	int BytesRead;
+
+
+
+	private:
+	
+	// DFH - Read hex return int
+	int HexToInt(unsigned char * Hex, int num){
+		int fin = 0;
+		for(int i = 1; i <= num; i++){
+			fin += pow(16, (i-1)*2) * Hex[num - i]; 
+		}
+
+		return fin;
+	}
+
 };
 
 #endif
+
+
+

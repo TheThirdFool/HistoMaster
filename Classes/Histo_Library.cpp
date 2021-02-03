@@ -70,14 +70,13 @@ int Histo::Read(FILE *infile, int BytesTotal){
 	printf("Bytes read = %i\n", BytesRead);	
 	printf("Total bytes read = %i\n\n", BytesTotal);	
 
-
 	//================================================================================================
 	//========================================================================= THIS AREA IS BROKEN ==
 	//================================================================================================
-	
+		
 	//	printf("H2.NBytes = %i\nH2.KeyLen = %i\n", Header2.NBytes, Header2.KeyLen);
-	
-	
+		
+		
 	unsigned char Input[Header2.NBytes - Header2.KeyLen];
 	//unsigned char JunkBuffer[16];
 	
@@ -85,66 +84,69 @@ int Histo::Read(FILE *infile, int BytesTotal){
 	//int check = fread(Input, sizeof(Input), 1, infile);
 	int check = fread(&Input, sizeof(unsigned char), (Header2.NBytes - Header2.KeyLen), infile);
 	BytesRead = BytesRead + (Header2.NBytes - Header2.KeyLen);	
+		
+	if(strcmp((char*)Header2.ClassName, "TH1D") == 0){
+		
+		printf("Size of Input outside inflate = %lu\n", sizeof(Input));
+		printf("Size of check = %i\n", check);
+		printf("Input is:\n");
+		for(int ik = 0; ik < 20; ik++) printf("%c", Input[ik]);
+		printf("\n");
+		
+		//	InflateData(&Input, (Header2.NBytes - Header2.KeyLen), Header2.ObjLen);
+		
+		int LenInput  = Header2.NBytes - Header2.KeyLen;
+		int LenOutput = Header2.ObjLen - Header2.KeyLen;
+		
+		unsigned char Output[LenOutput];
+		Output[0] = '\0';
+		
+		printf("The input  is %lu bytes long. Given as %i .\n",sizeof(Input), LenInput);
+		printf("The output is %lu bytes long. Given as %i .\n",sizeof(Output), LenOutput);
+		printf("Input is: %.15s\n", Input);
+		
+		// STEP 2.
+		// inflate b into c
+		// zlib struct
+		z_stream infstream;
+		infstream.zalloc = 0;
+		infstream.zfree  = 0;
+		infstream.opaque = 0;
+		
+		
+		// setup "b" as the input and "c" as the compressed output
+		infstream.avail_in = (uInt)LenInput; // size of input
+		infstream.next_in = Input; // input char array
+		infstream.avail_out = (uInt)LenOutput; // size of output
+		infstream.next_out = Output; // output char array
+		
+		
+		int wbits = 18;
+		
+		int ret;
+		
+		// the actual DE-compression work.
+		ret = inflateInit(&infstream);//, wbits);
+		printf("ZLIB Output ->->-> %s\n", infstream.msg);
+		
+		// https://github.com/klauspost/compress 
+		// My saviour??? We will see
+		
+		printf("ret = %i\n", ret);
+		
+		inflate(&infstream, 4);
+		printf("ZLIB Output ->->-> %s\n", infstream.msg);
+		inflateEnd(&infstream);
+		 
+		printf("ZLIB Output ->->-> %s\n", infstream.msg);
+		
+		printf("Uncompressed size is: %lu\n", sizeof(Output));
+		printf("Uncompressed string is: %.15s\n", Output);
+		printf("Full Output is:\n");
+		for(int ik = 60; ik < 65; ik++) printf("%i:%c\n",ik, Output[ik]);
+		printf("\n");
 
-
-	printf("Size of Input outside inflate = %lu\n", sizeof(Input));
-	printf("Size of check = %i\n", check);
-	printf("Input is:\n");
-	for(int ik = 0; ik < 20; ik++) printf("%c", Input[ik]);
-	printf("\n");
-	
-	//	InflateData(&Input, (Header2.NBytes - Header2.KeyLen), Header2.ObjLen);
-	
-	int LenInput  = Header2.NBytes - Header2.KeyLen;
-	int LenOutput = Header2.ObjLen - Header2.KeyLen;
-	
-	unsigned char Output[LenOutput];
-	Output[0] = '\0';
-  
-	printf("The input  is %lu bytes long. Given as %i .\n",sizeof(Input), LenInput);
-	printf("The output is %lu bytes long. Given as %i .\n",sizeof(Output), LenOutput);
-	printf("Input is: %.15s\n", Input);
-  
-  // STEP 2.
-  // inflate b into c
-  // zlib struct
-	z_stream infstream;
-	infstream.zalloc = 0;
-	infstream.zfree  = 0;
-	infstream.opaque = 0;
-	
-	
-	// setup "b" as the input and "c" as the compressed output
-	infstream.avail_in = (uInt)LenInput; // size of input
-	infstream.next_in = Input; // input char array
-	infstream.avail_out = (uInt)LenOutput; // size of output
-	infstream.next_out = Output; // output char array
-	
-	
-	int wbits = 18;
-	
-	int ret;
-	
-	// the actual DE-compression work.
-	ret = inflateInit(&infstream);//, wbits);
-	printf("ZLIB Output ->->-> %s\n", infstream.msg);
-	
-	// https://github.com/klauspost/compress 
-	// My saviour??? We will see
-	
-	printf("ret = %i\n", ret);
-	
-	inflate(&infstream, 4);
-	printf("ZLIB Output ->->-> %s\n", infstream.msg);
-	inflateEnd(&infstream);
-	 
-	printf("ZLIB Output ->->-> %s\n", infstream.msg);
-  
-	printf("Uncompressed size is: %lu\n", sizeof(Output));
-	printf("Uncompressed string is: %.15s\n", Output);
-	printf("Full Output is:\n");
-	for(int ik = 0; ik < LenOutput; ik++) printf(" | %i:%u ",ik, Output[ik]);
-	printf("\n");
+	}
 	
 	//	printf("%s",Output);
 	
