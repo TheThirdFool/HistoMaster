@@ -1,0 +1,28 @@
+#!/bin/bash
+  
+
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+CY='\033[0;36m'
+
+echo ""
+echo -e "                 "-- Compiling ${RED}HistoMaster ${BLUE}ALPHA${NC}--
+echo ""
+
+
+CXX=clang++
+
+INC="histogram.hpp"
+
+OBJS="histogram.o"
+echo -e "[${CY}compiling${NC}] $CXX -c " $INC
+$CXX -c $INC
+
+echo -e "[${CY}compiling${NC}] $CXX Root2Txt_Improved.C -o RT" $OBJS
+$CXX main.cpp -o HM -lz histogram_class.o
+
+
+echo
+echo -e ${RED}HistoMaster ${BLUE}ALPHA$r${NC} is compiled.
+echo
+
