@@ -13,13 +13,13 @@
 
 // FUNCTION LIST:
 
-// Histo(double * a, double * b, int no)    -  Constructor
+// Histo()  -  Constructor
 // int Read(FILE * infile, int BytesTotal)  -  Read data from file
 // int ReadTXT(FILE * infile)               -  Read data from a txt file
 // int ReadString(char* String, int row, double * dat) - Split string into doubles 
-
-//double Integrate()
-//double Integrate(double low, double high)
+// int Histo::HexToInt(unsigned char * Hex, int num)   - Read hex number - return int
+// double Integrate()                        - Return whole hist integral
+// double Integrate(double low, double high) - Return integral within bounds
 
 
 
@@ -42,16 +42,21 @@
 
 
 
-// DFH - Constructor copying across pointers into Coord
-Histo::Histo(double * a, double * b, int no){
-//	X = (double*)malloc(no * sizeof(double));
-//	Y = (double*)malloc(no * sizeof(double));
-
-//	memcpy(X, a, no * sizeof(double));
-//	memcpy(Y, b, no * sizeof(double));
-	NoBins = no;
+// DFH - Constructor clearing the histo class
+Histo::Histo(){
+	X.clear();
+	Y.clear();
 }
 
+
+// DFH - Read in a hexidecimal number and return an integer
+int Histo::HexToInt(unsigned char * Hex, int num){
+	int fin = 0;
+	for(int i = 1; i <= num; i++){
+		fin += pow(16, (i-1)*2) * Hex[num - i]; 
+	}
+	return fin;
+}
 
 
 // DFH - Read from the infile pointer. Can't decode data yet - but large memory leak fix may have cleared the way for this.
@@ -93,52 +98,53 @@ int Histo::Read(FILE *infile, int BytesTotal){
 	int LenInput  = Header2.NBytes - Header2.KeyLen;
 	int LenOutput = Header2.ObjLen - Header2.KeyLen;
 	
-//	unsigned char Output[LenOutput];
+	unsigned char Output[LenOutput];
+	Output[0] = '\0';
+  
+	printf("The input  is %lu bytes long. Given as %i .\n",sizeof(Input), LenInput);
+	printf("The output is %lu bytes long. Given as %i .\n",sizeof(Output), LenOutput);
+	printf("Input is: %.15s\n", Input);
+  
+  // STEP 2.
+  // inflate b into c
+  // zlib struct
+	z_stream infstream;
+	infstream.zalloc = 0;
+	infstream.zfree  = 0;
+	infstream.opaque = 0;
 	
-//	printf("The input  is %lu bytes long. Given as %i .\n",sizeof(Input), LenInput);
-//	printf("The output is %lu bytes long. Given as %i .\n",sizeof(Output), LenOutput);
-//	printf("Input is: %.15s\n", Input);
 	
-	// STEP 2.
-	// inflate b into c
-	// zlib struct
-//	z_stream infstream;
-//	infstream.zalloc = 0;
-//	infstream.zfree  = 0;
-//	infstream.opaque = 0;
-//	
-//	
-//	// setup "b" as the input and "c" as the compressed output
-//	infstream.avail_in = (uInt)LenInput; // size of input
-//	infstream.next_in = Input; // input char array
-//	infstream.avail_out = (uInt)LenOutput; // size of output
-//	infstream.next_out = Output; // output char array
-//	
-//	
-//	int wbits = 18;
-//	
-//	int ret;
-//	
-//	// the actual DE-compression work.
-//	ret = inflateInit2(&infstream, -15);//, wbits);
-//	printf("ZLIB Output ->->-> %s\n", infstream.msg);
-//	
-//	// https://github.com/klauspost/compress 
-//	// My saviour??? We will see
-//	
-//	printf("ret = %i\n", ret);
-//	
-//	inflate(&infstream, 4);
-//	printf("ZLIB Output ->->-> %s\n", infstream.msg);
-//	inflateEnd(&infstream);
-//	 
-//	printf("ZLIB Output ->->-> %s\n", infstream.msg);
+	// setup "b" as the input and "c" as the compressed output
+	infstream.avail_in = (uInt)LenInput; // size of input
+	infstream.next_in = Input; // input char array
+	infstream.avail_out = (uInt)LenOutput; // size of output
+	infstream.next_out = Output; // output char array
 	
-//	printf("Uncompressed size is: %lu\n", sizeof(Output));
-//	printf("Uncompressed string is: %.15s\n", Output);
-//	printf("Full Output is:\n");
-//	for(int ik = 0; ik < 30; ik++) printf("%c", Output[ik]);
-//	printf("\n");
+	
+	int wbits = 18;
+	
+	int ret;
+	
+	// the actual DE-compression work.
+	ret = inflateInit(&infstream);//, wbits);
+	printf("ZLIB Output ->->-> %s\n", infstream.msg);
+	
+	// https://github.com/klauspost/compress 
+	// My saviour??? We will see
+	
+	printf("ret = %i\n", ret);
+	
+	inflate(&infstream, 4);
+	printf("ZLIB Output ->->-> %s\n", infstream.msg);
+	inflateEnd(&infstream);
+	 
+	printf("ZLIB Output ->->-> %s\n", infstream.msg);
+  
+	printf("Uncompressed size is: %lu\n", sizeof(Output));
+	printf("Uncompressed string is: %.15s\n", Output);
+	printf("Full Output is:\n");
+	for(int ik = 0; ik < LenOutput; ik++) printf(" | %i:%u ",ik, Output[ik]);
+	printf("\n");
 	
 	//	printf("%s",Output);
 	
@@ -154,10 +160,7 @@ int Histo::Read(FILE *infile, int BytesTotal){
 }
 
 
-// ===========
-
-
-
+// DFH - Read a "x,y" string and return X and Y 
 int Histo::ReadString(char* String, int row, double * dat){
 	char * Holder = NULL;
 	char *pEnd;
@@ -169,6 +172,7 @@ int Histo::ReadString(char* String, int row, double * dat){
 }
 
 
+// DFH - Read a .txt file and fill vectors
 int Histo::ReadTXT(FILE * infile){
 	char * line = NULL;
 	size_t len = 0;
@@ -190,8 +194,12 @@ int Histo::ReadTXT(FILE * infile){
 }
 
 
-//========= PD =========
 
+
+// ==== DATA ANALYSIS ====
+
+
+// PD - Return the integral of the entire Histo
 double Histo::Integrate(){
 	double sum = 0.0; 
 	for(int i =0; i<X.size();i++){
@@ -201,6 +209,7 @@ double Histo::Integrate(){
 }
 
 
+// PD - Return the integral of the Histo within bounds low - high
 double Histo::Integrate(double low, double high){
 	int start = 0;  
 	double sum_r = 0.0; 

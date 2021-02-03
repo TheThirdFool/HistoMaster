@@ -35,14 +35,11 @@ class Histo{
 	std::vector<double> X;
 	std::vector<double> Y;
 
-	// Empty Constructor
-	Histo(){}
-
 	// Destructor
 	~Histo(){}
 
 	// FUNCTIONS ====
-	Histo(double * a, double * b, int no);
+	Histo(); // Declared in Histo_Library.cpp
 	int Read(FILE * infile, int BytesTotal);
 	int ReadTXT(FILE * infile);
 	
@@ -55,6 +52,7 @@ class Histo{
 
 
 	int ReadString(char* String, int row, double * dat); 
+	int HexToInt(unsigned char * Hex, int num);
 
 };
 
