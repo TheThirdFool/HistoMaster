@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "KeyHeader.hpp"
+#include "HMatrix.hpp"
 
 #ifndef HISTO_H
 #define HISTO_H
@@ -42,6 +43,8 @@ class Histo{
 	Histo(); // Declared in Histo_Library.cpp
 	int Read(FILE * infile, int BytesTotal);
 	int ReadTXT(FILE * infile);
+
+	int Fit(char * func, int noIterations = 5);
 	
 	double Integrate();
 	double Integrate(double low, double high);
@@ -53,6 +56,7 @@ class Histo{
 
 	int ReadString(char* String, int row, double * dat); 
 	int HexToInt(unsigned char * Hex, int num);
+	int GS_Process();
 
 };
 

@@ -11,7 +11,7 @@ echo ""
 
 CXX=clang++
 
-INC="Classes/FileHeader.hpp Classes/ROOTHeader.hpp Classes/KeyHeader.hpp Classes/Histo_Library.cpp Classes/Histo.hpp"
+INC="Classes/FileHeader.hpp Classes/ROOTHeader.hpp Classes/KeyHeader.hpp Classes/Histo_Library.cpp Classes/Histo.hpp Classes/HMatrix.hpp"
 OBJS="Classes/FileHeader.o Classes/ROOTHeader.o Classes/KeyHeader.o Classes/Histo.o Classes/Histo_Library.o"
 
 echo -e "[${CY}compiling${NC}] $CXX -c " $INC

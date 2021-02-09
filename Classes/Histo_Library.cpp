@@ -21,6 +21,9 @@
 // double Integrate()                        - Return whole hist integral
 // double Integrate(double low, double high) - Return integral within bounds
 
+// int Histo::Fit(char * func, int noIterations = 5)
+// int Histo::GS_Process()
+
 
 
 
@@ -235,6 +238,100 @@ double Histo::Integrate(double low, double high){
 	
 	return sum_r; 
 }
+
+
+
+int Histo::GS_Process(){
+
+
+//  === SUDO CODE ===
+//	matrix new_matrix;
+
+//	for(old_column in old_matrix) {
+//		new_column[size];
+//		new_column[0] = old_column[0];
+	
+//		for(int j=1; j < len_old_column; j++){
+//			total = old_column[j];
+//			for(int jj = j - 1; jj >= 0; jj--){
+//				total =- proj(new_column[jj], old_column[j]);
+//			}
+//		}
+
+//		new_column.normalise();
+	
+//		new_matrix.add(new_column);
+
+//	}
+
+
+//	R = new_matrix.transpose() [MATRIX MULT] Old_Matrix 
+
+
+	return 1;
+}
+
+
+
+// LETS FIT THIS BITCH
+// DFH - Fitting function for the gaussian atm.
+int Histo::Fit(char * func, int noIterations){
+
+	if(strcmp(func,"gaus") !=0) return 0;
+
+
+	// AUTOMATE THIS
+	double a_j = 0.5;  // A - Scaling  - maybe put into a pointer "beta"
+	double b_j = 2.0;  // B - Mean
+	double c_j = 0.25; // C - Std Dev
+	double d_j = 0.0;  // D - Background
+
+	// JACOBIAN
+	double J[X.size()][4];
+	// Turn into HMatrix
+
+	// ITERATE AND IMPROVE
+	for(int i=0; i < noIterations; i++){
+
+
+		// Fill Jacobian with data
+		for(int j=0; j < X.size(); j++){
+			double x_i = X[i];
+			double y_i = Y[i];
+
+			//exp()	
+	
+			double temp = (x_i - b_j) * (x_i - b_j);
+			double temp2 = (x_i - b_j) / (c_j * c_j);
+
+			J[j][0] = exp((-1.0 * temp) / (2.0 * c_j * c_j));
+			J[j][1] = a_j * exp((-1.0 * temp) / (2.0 * c_j * c_j)) * temp2;
+			J[j][2] = a_j * exp((-1.0 * temp) / (2.0 * c_j * c_j)) * temp2 * (x_i - b_j) / c_j;
+			J[j][3] = 1.0;
+			
+		}
+
+
+		// GRAM-SCHMIDT PROCESS
+
+		// double J_MP = GS_Process(J);
+
+		// AMMEND FIT
+
+
+		// for(int k=0; k < 4; k++){
+
+			// Find beta[i] + (J_MP * r(beta))[i]
+
+		// }
+
+	}
+
+
+
+	return 1;
+}
+
 
 
 

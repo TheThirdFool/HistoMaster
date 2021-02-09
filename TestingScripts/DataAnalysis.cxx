@@ -13,7 +13,6 @@
 
 
 
-
 #ifndef __CINT__ 
 
 // == MAIN ==
@@ -21,18 +20,23 @@
 int main(int argc,char **argv){
 
 	//============================================= Open File
+
 	FILE *infile  = fopen(argv[1], "rb"); 
 
-//============================================= Read Data	
+	//============================================= Read Data
 	
 	Histo histTest;
-
 	histTest.ReadTXT(infile); 
+
+	//============================================= Analyse Data
 
 	double peak_sum = histTest.Integrate(2.,4.); 	
 	double back_sum = histTest.Integrate(0.,2.); 	
 
 	double fullsum = histTest.Integrate(); 
+
+
+	histTest.Fit((char*)"gaus");
 
 	printf("peak_sum == %f\nback_sum == %f\nfullsum == %f\n",peak_sum,back_sum,fullsum);
 
@@ -43,3 +47,37 @@ int main(int argc,char **argv){
 }
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
