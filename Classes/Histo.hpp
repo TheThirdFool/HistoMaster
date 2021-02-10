@@ -56,7 +56,8 @@ class Histo{
 
 	int ReadString(char* String, int row, double * dat); 
 	int HexToInt(unsigned char * Hex, int num);
-	int GS_Process();
+	int GS_Process(HMatrix * old_matrix);
+	int Proj(double * A, double * B, int NoRows, double * ret);
 
 };
 

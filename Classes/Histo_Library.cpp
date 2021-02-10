@@ -22,7 +22,8 @@
 // double Integrate(double low, double high) - Return integral within bounds
 
 // int Histo::Fit(char * func, int noIterations = 5)
-// int Histo::GS_Process()
+// int Histo::GS_Process(HMatrix * old_matrix)
+// int Histo::Proj(double * A, double * B, int NoRows, double * ret)
 
 
 
@@ -129,7 +130,7 @@ int Histo::Read(FILE *infile, int BytesTotal){
 		int ret;
 		
 		// the actual DE-compression work.
-		ret = inflateInit(&infstream);//, wbits);
+		ret = inflateInit2(&infstream, -32);//, wbits);
 		printf("ZLIB Output ->->-> %s\n", infstream.msg);
 		
 		// https://github.com/klauspost/compress 
@@ -240,29 +241,66 @@ double Histo::Integrate(double low, double high){
 }
 
 
+int Histo::Proj(double * A, double * B, int NoRows, double * ret){
 
-int Histo::GS_Process(){
+	double A_total = 0;
+	for(int i = 0; i < NoRows; i++){
+		A_total =+ A[i] * A[i];
+	}
+
+	double B_total = 0;
+	for(int i = 0; i < NoRows; i++){
+		B_total =+ B[i] * B[i];
+	}
+
+	
+	double scaler = sqrt(B_total) / sqrt(A_total);
+	
+	for(int i = 0; i < NoRows; i++){
+		ret[i] = scaler * A[i];
+	}
+	
+	return 1;
+
+} 
+
+
+int Histo::GS_Process(HMatrix * old_matrix){
 
 
 //  === SUDO CODE ===
-//	matrix new_matrix;
+	HMatrix new_matrix;
 
-//	for(old_column in old_matrix) {
-//		new_column[size];
-//		new_column[0] = old_column[0];
+	int NoRows = old_matrix->GetNoRows();
+
+	double * old_column;
+	old_matrix->GetColumn(old_column, 0);
 	
-//		for(int j=1; j < len_old_column; j++){
-//			total = old_column[j];
-//			for(int jj = j - 1; jj >= 0; jj--){
-//				total =- proj(new_column[jj], old_column[j]);
-//			}
-//		}
+	double new_column[NoRows];
+	memcpy(new_column, old_column, sizeof(double)*NoRows);
+	new_matrix.AddColumn(new_column);
 
-//		new_column.normalise();
+
+	// THIS WILL NEED SOME FIXING HOWEVER THE LOGIC IS SOUND
+/*
+	for(int i=1; i < old_matrix->GetNoColumns(); i++) {
+		old_matrix.GetColumn(old_column, i);
 	
-//		new_matrix.add(new_column);
+		new_column = old_column;
+	
+		double total[noRows] = old_column;
+		for(int j = i - 1; j >= 0; j--){
+			double ret[noRows];
+			Proj(new_matrix.GetColumn(j), old_column, NoRows, ret);
+			total -= ret;
+		}
+		
+		new_column.normalise();
+	
+		new_matrix.add(new_column);
 
-//	}
+	}
+*/
 
 
 //	R = new_matrix.transpose() [MATRIX MULT] Old_Matrix 
@@ -318,6 +356,7 @@ int Histo::Fit(char * func, int noIterations){
 
 		// AMMEND FIT
 
+		// Back propogation etc here!
 
 		// for(int k=0; k < 4; k++){
 

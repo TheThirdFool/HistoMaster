@@ -28,6 +28,8 @@ class HMatrix{
 		return 1;
 	}
 
+	int GetNoRows(){return rows;}
+	int GetNoColumns(){return columns;}
 
 	int AddColumn(double * column){
 
@@ -39,6 +41,13 @@ class HMatrix{
 		return 1;
 	}
 
+
+	int GetColumn(double * ret, int i){
+		for(int j = 0; j < rows; j++){
+			ret[j] = Mat[i][j];
+		}
+		return 1;
+	}
 
 
 	int Transpose(){
