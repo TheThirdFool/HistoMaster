@@ -21,6 +21,10 @@
 // double Integrate()                        - Return whole hist integral
 // double Integrate(double low, double high) - Return integral within bounds
 
+// int Histo::Fit(char * func, int noIterations = 5)
+// int Histo::GS_Process(HMatrix * old_matrix)
+// int Histo::Proj(double * A, double * B, int NoRows, double * ret)
+
 
 
 
@@ -126,7 +130,7 @@ int Histo::Read(FILE *infile, int BytesTotal){
 		int ret;
 		
 		// the actual DE-compression work.
-		ret = inflateInit(&infstream);//, wbits);
+		ret = inflateInit2(&infstream, -32);//, wbits);
 		printf("ZLIB Output ->->-> %s\n", infstream.msg);
 		
 		// https://github.com/klauspost/compress 
@@ -235,6 +239,138 @@ double Histo::Integrate(double low, double high){
 	
 	return sum_r; 
 }
+
+
+int Histo::Proj(double * A, double * B, int NoRows, double * ret){
+
+	double A_total = 0;
+	for(int i = 0; i < NoRows; i++){
+		A_total =+ A[i] * A[i];
+	}
+
+	double B_total = 0;
+	for(int i = 0; i < NoRows; i++){
+		B_total =+ B[i] * B[i];
+	}
+
+	
+	double scaler = sqrt(B_total) / sqrt(A_total);
+	
+	for(int i = 0; i < NoRows; i++){
+		ret[i] = scaler * A[i];
+	}
+	
+	return 1;
+
+} 
+
+
+int Histo::GS_Process(HMatrix * old_matrix){
+
+
+//  === SUDO CODE ===
+	HMatrix new_matrix;
+
+	int NoRows = old_matrix->GetNoRows();
+
+	double * old_column;
+	old_matrix->GetColumn(old_column, 0);
+	
+	double new_column[NoRows];
+	memcpy(new_column, old_column, sizeof(double)*NoRows);
+	new_matrix.AddColumn(new_column);
+
+
+	// THIS WILL NEED SOME FIXING HOWEVER THE LOGIC IS SOUND
+/*
+	for(int i=1; i < old_matrix->GetNoColumns(); i++) {
+		old_matrix.GetColumn(old_column, i);
+	
+		new_column = old_column;
+	
+		double total[noRows] = old_column;
+		for(int j = i - 1; j >= 0; j--){
+			double ret[noRows];
+			Proj(new_matrix.GetColumn(j), old_column, NoRows, ret);
+			total -= ret;
+		}
+		
+		new_column.normalise();
+	
+		new_matrix.add(new_column);
+
+	}
+*/
+
+
+//	R = new_matrix.transpose() [MATRIX MULT] Old_Matrix 
+
+
+	return 1;
+}
+
+
+
+// LETS FIT THIS BITCH
+// DFH - Fitting function for the gaussian atm.
+int Histo::Fit(char * func, int noIterations){
+
+	if(strcmp(func,"gaus") !=0) return 0;
+
+
+	// AUTOMATE THIS
+	double a_j = 0.5;  // A - Scaling  - maybe put into a pointer "beta"
+	double b_j = 2.0;  // B - Mean
+	double c_j = 0.25; // C - Std Dev
+	double d_j = 0.0;  // D - Background
+
+	// JACOBIAN
+	double J[X.size()][4];
+	// Turn into HMatrix
+
+	// ITERATE AND IMPROVE
+	for(int i=0; i < noIterations; i++){
+
+
+		// Fill Jacobian with data
+		for(int j=0; j < X.size(); j++){
+			double x_i = X[i];
+			double y_i = Y[i];
+
+			//exp()	
+	
+			double temp = (x_i - b_j) * (x_i - b_j);
+			double temp2 = (x_i - b_j) / (c_j * c_j);
+
+			J[j][0] = exp((-1.0 * temp) / (2.0 * c_j * c_j));
+			J[j][1] = a_j * exp((-1.0 * temp) / (2.0 * c_j * c_j)) * temp2;
+			J[j][2] = a_j * exp((-1.0 * temp) / (2.0 * c_j * c_j)) * temp2 * (x_i - b_j) / c_j;
+			J[j][3] = 1.0;
+			
+		}
+
+
+		// GRAM-SCHMIDT PROCESS
+
+		// double J_MP = GS_Process(J);
+
+		// AMMEND FIT
+
+		// Back propogation etc here!
+
+		// for(int k=0; k < 4; k++){
+
+			// Find beta[i] + (J_MP * r(beta))[i]
+
+		// }
+
+	}
+
+
+
+	return 1;
+}
+
 
 
 
