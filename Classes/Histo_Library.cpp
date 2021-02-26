@@ -16,6 +16,7 @@
 // Histo()  -  Constructor
 // int Read(FILE * infile, int BytesTotal)  -  Read data from file
 // int ReadTXT(FILE * infile)               -  Read data from a txt file
+// int Histo::ReadCNF(FILE * infile)        -  Read data from a CNF file
 // int ReadString(char* String, int row, double * dat) - Split string into doubles 
 // int Histo::HexToInt(unsigned char * Hex, int num)   - Read hex number - return int
 // double Integrate()                        - Return whole hist integral
@@ -24,7 +25,7 @@
 // int Histo::Fit(char * func, int noIterations = 5)
 // int Histo::GS_Process(HMatrix * old_matrix)
 // int Histo::Proj(double * A, double * B, int NoRows, double * ret)
-
+// int Histo::ReadFlex(char* filename)
 
 
 
@@ -94,7 +95,7 @@ int Histo::Read(FILE *infile, int BytesTotal){
 		printf("Size of Input outside inflate = %lu\n", sizeof(Input));
 		printf("Size of check = %i\n", check);
 		printf("Input is:\n");
-		for(int ik = 0; ik < 20; ik++) printf("%c", Input[ik]);
+		for(int ik = 0; ik < 50; ik++) printf("%c", Input[ik]);
 		printf("\n");
 		
 		//	InflateData(&Input, (Header2.NBytes - Header2.KeyLen), Header2.ObjLen);
@@ -108,7 +109,7 @@ int Histo::Read(FILE *infile, int BytesTotal){
 		printf("The input  is %lu bytes long. Given as %i .\n",sizeof(Input), LenInput);
 		printf("The output is %lu bytes long. Given as %i .\n",sizeof(Output), LenOutput);
 		printf("Input is: %.15s\n", Input);
-		
+
 		// STEP 2.
 		// inflate b into c
 		// zlib struct
@@ -147,7 +148,7 @@ int Histo::Read(FILE *infile, int BytesTotal){
 		printf("Uncompressed size is: %lu\n", sizeof(Output));
 		printf("Uncompressed string is: %.15s\n", Output);
 		printf("Full Output is:\n");
-		for(int ik = 60; ik < 65; ik++) printf("%i:%c\n",ik, Output[ik]);
+		for(int ik = 0; ik < 50; ik++) printf("%c", Output[ik]);
 		printf("\n");
 
 	}
@@ -198,6 +199,65 @@ int Histo::ReadTXT(FILE * infile){
 
 	return i;
 }
+
+
+
+// AZ - Reads a CNF file 
+int Histo::ReadCNF(FILE * infile){
+
+    std::vector<int> data;
+    int temp;
+    size_t read;
+
+    // Reads data from file in ints and adds to data(vector)
+    while((read = fread(&temp,sizeof(int),1,infile))==1) {
+        printf("%i\n",temp);
+        data.push_back(temp);
+    }
+
+    //TH1D * h = new TH1D("h","h",4096,0,4096);
+
+    // Makes i-offset bins and sets to data[i] values
+    int offset = data.size() - 4096;
+    for(int i=offset +1;i < data.size();i++) {
+        //h->SetBinContent(i-offset,data[i]);
+        X.push_back(i-offset);
+		Y.push_back(data[i]);
+    }
+
+    return 1;
+}
+
+
+
+
+// DFH - Flex read
+int Histo::ReadFlex(char* filename){
+
+	//============================================= Open File
+
+	FILE *infile  = fopen(filename, "r"); 
+
+	//============================================= Read Data
+	//if infile name is .txt
+	ReadTXT(infile); 
+
+	//============================================= Analyse Data
+
+	fclose(infile);
+
+	return 1;
+
+}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -267,41 +327,47 @@ int Histo::Proj(double * A, double * B, int NoRows, double * ret){
 
 int Histo::GS_Process(HMatrix * old_matrix){
 
+	old_matrix->Print();
 
 //  === SUDO CODE ===
 	HMatrix new_matrix;
 
-	int NoRows = old_matrix->GetNoRows();
+	int noRows = old_matrix->GetNoRows();
 
 	double * old_column;
 	old_matrix->GetColumn(old_column, 0);
 	
-	double new_column[NoRows];
-	memcpy(new_column, old_column, sizeof(double)*NoRows);
-	new_matrix.AddColumn(new_column);
+	double new_column[noRows];
+	memcpy(new_column, old_column, sizeof(double)*noRows);
+	new_matrix.AddColumn(new_column, 0);
 
 
 	// THIS WILL NEED SOME FIXING HOWEVER THE LOGIC IS SOUND
-/*
+
+	int count = 0;
 	for(int i=1; i < old_matrix->GetNoColumns(); i++) {
-		old_matrix.GetColumn(old_column, i);
+		old_matrix->GetColumn(old_column, i);
 	
-		new_column = old_column;
+		*new_column = *old_column;
 	
-		double total[noRows] = old_column;
+		double total[noRows];
+		*total  = *old_column;
 		for(int j = i - 1; j >= 0; j--){
 			double ret[noRows];
-			Proj(new_matrix.GetColumn(j), old_column, NoRows, ret);
-			total -= ret;
+			double ret_col[noRows];
+			new_matrix.GetColumn(ret_col, j);
+			Proj(ret_col, old_column, noRows, ret);
+			for(int k=0; k < noRows; k++) total[k] -= ret[k];
 		}
 		
-		new_column.normalise();
+//		new_column.normalise();
 	
-		new_matrix.add(new_column);
+		new_matrix.AddColumn(new_column, count);
+		count++;
 
 	}
-*/
 
+	new_matrix.Print();
 
 //	R = new_matrix.transpose() [MATRIX MULT] Old_Matrix 
 
@@ -351,8 +417,12 @@ int Histo::Fit(char * func, int noIterations){
 
 
 		// GRAM-SCHMIDT PROCESS
+		HMatrix J_Mat(X.size(), 4);
+		J_Mat.Print();
+		J_Mat.setData((double **)J);
 
-		// double J_MP = GS_Process(J);
+
+		int J_MP = GS_Process(&J_Mat);
 
 		// AMMEND FIT
 

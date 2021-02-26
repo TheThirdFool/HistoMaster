@@ -43,6 +43,8 @@ class Histo{
 	Histo(); // Declared in Histo_Library.cpp
 	int Read(FILE * infile, int BytesTotal);
 	int ReadTXT(FILE * infile);
+	int ReadCNF(FILE * infile);
+	int ReadFlex(char* filename);
 
 	int Fit(char * func, int noIterations = 5);
 	

@@ -135,8 +135,10 @@ int main(int argc,char **argv){
 	int RfEnd;
 	char junk[CHUNK];
 	junk[0] = '\0';
+
 	char junk2[CHUNK];
 	junk2[0] = '\0';
+
 	RfEnd = RHead.GetfEnd();
 	RHead.Print();
 	
@@ -174,7 +176,7 @@ int main(int argc,char **argv){
 	// READ HISTOGRAMS ==========
 
 	int count =0;	
-	for(int hist = 0; hist < 15; hist++){
+	for(int hist = 0; hist < 2; hist++){
 		Histo histTest;
 		BytesTotal += histTest.Read(infile, 0);
 		count++;
