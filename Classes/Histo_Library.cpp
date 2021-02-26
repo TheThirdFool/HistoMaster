@@ -211,16 +211,12 @@ int Histo::ReadCNF(FILE * infile){
 
     // Reads data from file in ints and adds to data(vector)
     while((read = fread(&temp,sizeof(int),1,infile))==1) {
-        printf("%i\n",temp);
         data.push_back(temp);
     }
-
-    //TH1D * h = new TH1D("h","h",4096,0,4096);
 
     // Makes i-offset bins and sets to data[i] values
     int offset = data.size() - 4096;
     for(int i=offset +1;i < data.size();i++) {
-        //h->SetBinContent(i-offset,data[i]);
         X.push_back(i-offset);
 		Y.push_back(data[i]);
     }
