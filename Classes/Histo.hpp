@@ -50,6 +50,7 @@ class Histo{
 	
 	double Integrate();
 	double Integrate(double low, double high);
+	int Draw();
 
 	private:
 		
