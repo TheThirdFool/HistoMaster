@@ -13,12 +13,15 @@ CXX=clang++
 
 INC="Classes/FileHeader.hpp Classes/ROOTHeader.hpp Classes/KeyHeader.hpp Classes/Histo_Library.cpp Classes/Histo.hpp Classes/HMatrix.hpp"
 OBJS="Classes/FileHeader.o Classes/ROOTHeader.o Classes/KeyHeader.o Classes/Histo.o Classes/Histo_Library.o"
+LFLAGS="-lutil -lboost_iostreams -lboost_system -lboost_filesystem"
+		#-lutil -lboost_iostreams -lboost_system -lboost_filesystem
+COMPFLAGS="--std=c++17 -Wall -Wextra -O0 -g -D_GLIBCXX_DEBUG -fdiagnostics-color=auto -c"
 
 echo -e "[${CY}compiling${NC}] $CXX -c " $INC
-$CXX -c $INC
+$CXX -c $INC $COMPFLAGS
 
 echo -e "[${CY}compiling${NC}] $CXX Root2Txt_Improved.C -o RT" $OBJS
-$CXX Root2Txt_Improved.cxx -o RT -lz Histo_Library.o 
+$CXX Root2Txt_Improved.cxx -o RT -lz Histo_Library.o $LFLAGS
 
 
 

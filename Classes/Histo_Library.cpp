@@ -43,6 +43,10 @@
 #include "zlib.h"
 #include <vector>
 
+
+#include "gnuplot-iostream.h"
+#include <boost/tuple/tuple.hpp>
+
 // == CODE ==
 
 
@@ -436,6 +440,45 @@ int Histo::Fit(char * func, int noIterations){
 
 	return 1;
 }
+
+
+// ================== DRAW X & Y (with gnuplot)
+
+int Histo::Draw(){
+
+	Gnuplot gp;
+
+	std::vector<std::pair<double, double> > xy_pts;
+	for(int i=0; i < X.size(); i++) {
+		//printf("%f, %f\n", X[i], Y[i]);
+		xy_pts.push_back(std::make_pair(X[i], Y[i]));
+	}
+
+
+
+	gp << "set xrange [-2:4096]\nset yrange [-2:2000]\n";
+	// '-' means read from stdin.  The send1d() function sends data to gnuplot's stdin.
+	gp << "plot '-' with lines title 'X'\n";
+	gp.send1d(xy_pts);
+	//gp.send1d(Y);
+
+	return 1;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
