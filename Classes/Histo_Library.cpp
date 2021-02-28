@@ -19,6 +19,7 @@
 // int Histo::ReadCNF(FILE * infile)        -  Read data from a CNF file
 // int ReadString(char* String, int row, double * dat) - Split string into doubles 
 // int Histo::HexToInt(unsigned char * Hex, int num)   - Read hex number - return int
+// double Histo::CNF_Energy(int x, double * A)         - Return calibrated energy CNF
 // double Integrate()                        - Return whole hist integral
 // double Integrate(double low, double high) - Return integral within bounds
 
@@ -206,26 +207,90 @@ int Histo::ReadTXT(FILE * infile){
 
 
 
+
+
+/*
+double  Histo::Convert2Double(unsigned int a, unsigned int b){
+	uint16_t  tmp16[2];
+	tmp16[0] = b;
+	tmp16[1] = a;
+
+	return (*(float*)tmp16)/4.;
+}
+*/
+
+
+// DFH - Return the calibrated energy from the CNF calibration
+double Histo::CNF_Energy(int x, float * A){
+	return A[0] + A[1]*x + A[2]*x*x + A[3]*x*x*x;
+}
+
+
 // AZ - Reads a CNF file 
 int Histo::ReadCNF(FILE * infile){
 
+	// Declare variables
     std::vector<int> data;
     int temp;
     size_t read;
 
     // Reads data from file in ints and adds to data(vector)
     while((read = fread(&temp,sizeof(int),1,infile))==1) {
-        printf("%i\n",temp);
         data.push_back(temp);
     }
 
-    //TH1D * h = new TH1D("h","h",4096,0,4096);
+
+
+	// DFH - Calibrate
+	// ==============================================================================
+
+	unsigned int param_offs;
+
+	// Read the header to find the location of the calibration data
+	for (int i=0;i < 5;i++){
+		int oh = 28 + i * 12;
+
+		if(data[oh] != 73728) continue;
+
+		fseek(infile, ((oh * 4) + 10), SEEK_SET);
+		fread(&param_offs,sizeof(uint32_t),1,infile);
+		//printf("Parameter offset   = %u\n", param_offs);
+		break;
+
+	}
+
+	// More finding the calibration parameters... They make it deliberately difficult
+	fseek(infile, (param_offs + 34), SEEK_SET);
+	int random_offset;
+	fread(&random_offset,sizeof(uint16_t),1,infile);
+
+	int cal_offs;
+	cal_offs = param_offs + 48 + random_offset;
+	//printf("Calibration offset = %u\n", cal_offs);
+
+	// Go to the calibration location
+	float Cal_Vals[4];
+	fseek(infile, (cal_offs + 68), SEEK_SET);
+	
+	// Read cal vals 
+	unsigned int bytes[2];
+	uint16_t  tmp16[2];
+	for(int i=0; i < 4; i++){ 
+		fread(bytes, sizeof(uint16_t), 2, infile);
+		// Convert Cal vals into floats (little endian shit)
+		tmp16[0] = bytes[1];
+		tmp16[1] = bytes[0];		
+		Cal_Vals[i] = (*(float*)tmp16)/4.;
+	}
+
+	printf("Calibration = %f + %f * x + %f * x^2 + %f * x^3\n", Cal_Vals[0], Cal_Vals[1], Cal_Vals[2], Cal_Vals[3]);
+
+	// ==============================================================================
 
     // Makes i-offset bins and sets to data[i] values
     int offset = data.size() - 4096;
     for(int i=offset +1;i < data.size();i++) {
-        //h->SetBinContent(i-offset,data[i]);
-        X.push_back(i-offset);
+        X.push_back(CNF_Energy(i-offset, Cal_Vals));
 		Y.push_back(data[i]);
     }
 
@@ -459,12 +524,24 @@ int Histo::Draw(){
 	}
 
 
+	// Find max y:
+	double y_max = 0.0;
+	for(int i=0; i < Y.size(); i++){
+		if(Y[i] > y_max) y_max = Y[i];
+	}
 
-	gp << "set xrange [-2:4096]\nset yrange [-2:2000]\n";
+	y_max = y_max + 0.05 * y_max; 
+
+	char char_buffer [50];
+	sprintf(char_buffer, "set xrange [-2:%f]\nset yrange [-2:%f]\n",X[X.size()-1],y_max);
+
+	gp << char_buffer; 
 	// '-' means read from stdin.  The send1d() function sends data to gnuplot's stdin.
 	gp << "plot '-' with lines title 'X'\n";
 	gp.send1d(xy_pts);
 	//gp.send1d(Y);
+	std::cout << "Press enter to exit." << std::endl;
+	std::cin.get();
 
 	return 1;
 

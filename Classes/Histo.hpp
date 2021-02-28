@@ -57,6 +57,7 @@ class Histo{
 	int NoBins;
 
 
+	double CNF_Energy(int x, float * A);
 	int ReadString(char* String, int row, double * dat); 
 	int HexToInt(unsigned char * Hex, int num);
 	int GS_Process(HMatrix * old_matrix);

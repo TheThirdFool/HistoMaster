@@ -28,6 +28,7 @@ int main(int argc,char **argv){
 	Histo histTest;
 	//histTest.ReadTXT(infile); 
 	histTest.ReadCNF(infile); 
+	histTest.Draw();
 
 	//============================================= Analyse Data
 
@@ -41,7 +42,6 @@ int main(int argc,char **argv){
 
 	printf("peak_sum == %f\nback_sum == %f\nfullsum == %f\n",peak_sum,back_sum,fullsum);
 
-	histTest.Draw();
 
 	fclose(infile);
 
