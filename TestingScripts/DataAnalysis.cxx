@@ -29,10 +29,21 @@ int main(int argc,char **argv){
 	//histTest.ReadTXT(infile); 
 	histTest.ReadCNF(infile); 
 	histTest.Draw();
+	double peak_sum = histTest.Integrate(); 	
+	printf("Integral = %f\n", peak_sum);
+
+
+	histTest.Draw(1000.,1500.);
+	peak_sum = histTest.Integrate(1000., 1500.); 	
+	printf("Integral = %f\n", peak_sum);
+
+
+	histTest.Draw(1400.,1500.);
+	peak_sum = histTest.Integrate(1400., 1500.); 	
+	printf("Integral = %f\n", peak_sum);
 
 	//============================================= Analyse Data
 
-	double peak_sum = histTest.Integrate(2.,4.); 	
 	double back_sum = histTest.Integrate(0.,2.); 	
 
 	double fullsum = histTest.Integrate(); 

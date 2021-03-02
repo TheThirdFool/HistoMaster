@@ -28,6 +28,9 @@
 // int Histo::Proj(double * A, double * B, int NoRows, double * ret)
 // int Histo::ReadFlex(char* filename)
 
+// int Histo::Draw()
+// int Histo::Draw(double low, double high)
+
 
 
 
@@ -42,7 +45,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include "zlib.h"
+//#include "lz4.h"
 #include <vector>
+#include <string.h>
 
 
 #include "gnuplot-iostream.h"
@@ -85,14 +90,17 @@ int Histo::Read(FILE *infile, int BytesTotal){
 	//================================================================================================
 		
 	//	printf("H2.NBytes = %i\nH2.KeyLen = %i\n", Header2.NBytes, Header2.KeyLen);
+
+	unsigned char junk[9];
+	fread(&junk, sizeof(unsigned char), 9, infile);
 		
 		
-	unsigned char Input[Header2.NBytes - Header2.KeyLen];
+	unsigned char Input[Header2.NBytes - Header2.KeyLen -9];
 	//unsigned char JunkBuffer[16];
 	
 	//int check1 = fread(JunkBuffer, sizeof(JunkBuffer), 1, infile);
 	//int check = fread(Input, sizeof(Input), 1, infile);
-	int check = fread(&Input, sizeof(unsigned char), (Header2.NBytes - Header2.KeyLen), infile);
+	int check = fread(&Input, sizeof(unsigned char), (Header2.NBytes - Header2.KeyLen - 9), infile);
 	BytesRead = BytesRead + (Header2.NBytes - Header2.KeyLen);	
 		
 	if(strcmp((char*)Header2.ClassName, "TH1D") == 0){
@@ -106,14 +114,19 @@ int Histo::Read(FILE *infile, int BytesTotal){
 		//	InflateData(&Input, (Header2.NBytes - Header2.KeyLen), Header2.ObjLen);
 		
 		int LenInput  = Header2.NBytes - Header2.KeyLen;
-		int LenOutput = Header2.ObjLen - Header2.KeyLen;
+		int LenOutput = Header2.ObjLen;// - Header2.KeyLen;
 		
 		unsigned char Output[LenOutput];
 		Output[0] = '\0';
 		
 		printf("The input  is %lu bytes long. Given as %i .\n",sizeof(Input), LenInput);
 		printf("The output is %lu bytes long. Given as %i .\n",sizeof(Output), LenOutput);
-		printf("Input is: %.15s\n", Input);
+		printf("Input is:\n");
+		for(int ik = 0; ik < 16; ik++){
+			printf("%.2x ", Input[ik]);
+			//buff[ik - 60] = Output[ik];
+		}
+		printf("\n");
 
 		// STEP 2.
 		// inflate b into c
@@ -136,7 +149,7 @@ int Histo::Read(FILE *infile, int BytesTotal){
 		int ret;
 		
 		// the actual DE-compression work.
-		ret = inflateInit2(&infstream, -32);//, wbits);
+		ret = inflateInit(&infstream);//, wbits);
 		printf("ZLIB Output ->->-> %s\n", infstream.msg);
 		
 		// https://github.com/klauspost/compress 
@@ -144,16 +157,57 @@ int Histo::Read(FILE *infile, int BytesTotal){
 		
 		printf("ret = %i\n", ret);
 		
-		inflate(&infstream, 4);
+		ret = inflate(&infstream, 4);
+		printf("ret = %i\n", ret);
 		printf("ZLIB Output ->->-> %s\n", infstream.msg);
-		inflateEnd(&infstream);
+		ret = inflateEnd(&infstream);
+		printf("ret = %i\n", ret);
 		 
 		printf("ZLIB Output ->->-> %s\n", infstream.msg);
+
+	//	LZ4_decompress_safe((const char*)Input, (char*)Output, LenInput, LenOutput);	
 		
 		printf("Uncompressed size is: %lu\n", sizeof(Output));
 		printf("Uncompressed string is: %.15s\n", Output);
 		printf("Full Output is:\n");
-		for(int ik = 0; ik < 50; ik++) printf("%c", Output[ik]);
+
+		int okok = 0;
+		for(int ik = 0; ik < sizeof(Output); ik+=8){
+			printf("%.4i:%.4i: ",okok++, ik);
+			for(int ll=0; ll < 8; ll++){
+				printf("%.2x ", Output[ik + ll]);
+			}
+
+			printf("   |   ");
+			for(int ll=0; ll < 8; ll++){
+				if(Output[ik + ll] == '\n'){
+					printf(".");
+					continue;
+				}
+				printf("%c", Output[ik + ll]);
+			}
+			printf(" | \n");
+
+		}
+
+		//unsigned char buff[4];
+		//buff[0] = '\0';
+		for(int ik = 976; ik < 976 + 8 * 8; ik+=8){
+		//	printf("%i ", HexToInt(Output + ik,8));//, Output[ik+1], Output[ik+2], Output[ik+3], Output[ik+4], Output[ik+5], Output[ik+6], Output[ik+7]);
+			char buf[9];
+			buf[8] = '\0';
+			for(int kk = 0; kk < 8; kk++){
+				buf[kk] = Output[ik + kk];
+			}
+	
+			double thing_d = *(double*)buf;
+			printf("%f ", thing_d);
+	
+			//buff[j] = Output[ik];
+		}
+	//	int NBins_H = HexToInt(buff, 4);
+	//	printf("\nN Bins [%s] = %i\n", buff,  NBins_H);
+
 		printf("\n");
 
 	}
@@ -548,6 +602,42 @@ int Histo::Draw(){
 }
 
 
+int Histo::Draw(double low, double high){
+
+	Gnuplot gp;
+
+	std::vector<std::pair<double, double> > xy_pts;
+	for(int i=0; i < X.size(); i++) {
+		//printf("%f, %f\n", X[i], Y[i]);
+		xy_pts.push_back(std::make_pair(X[i], Y[i]));
+	}
+
+
+	// Find max y:
+	double y_max = 0.0;
+	for(int i=0; i < Y.size(); i++){
+		if(X[i] < low)  continue;
+		if(X[i] > high) continue;
+		if(Y[i] > y_max) y_max = Y[i];
+	}
+
+	y_max = y_max + 0.05 * y_max; 
+
+	char char_buffer [128];
+	sprintf(char_buffer, "set xrange [%f:%f]\nset yrange [-2:%f]\n", low, high, y_max);
+	printf("YMAX = %f\n", y_max);
+
+	gp << char_buffer; 
+	// '-' means read from stdin.  The send1d() function sends data to gnuplot's stdin.
+	gp << "plot '-' with lines title 'X'\n";
+	gp.send1d(xy_pts);
+	//gp.send1d(Y);
+	std::cout << "Press enter to exit." << std::endl;
+	std::cin.get();
+
+	return 1;
+
+}
 
 
 
