@@ -190,23 +190,24 @@ int Histo::Read(FILE *infile, int BytesTotal){
 
 		}
 
-		//unsigned char buff[4];
 		//buff[0] = '\0';
-		for(int ik = 976; ik < 976 + 8 * 8; ik+=8){
+		for(int ik = 592; ik < 592 + 8 * 8; ik+=8){
 		//	printf("%i ", HexToInt(Output + ik,8));//, Output[ik+1], Output[ik+2], Output[ik+3], Output[ik+4], Output[ik+5], Output[ik+6], Output[ik+7]);
-			char buf[9];
-			buf[8] = '\0';
-			for(int kk = 0; kk < 8; kk++){
-				buf[kk] = Output[ik + kk];
+			char buf[64];
+			sprintf(buf, "0x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x",Output[ik], Output[ik+1], Output[ik+2], Output[ik+3], Output[ik+4], Output[ik+5], Output[ik+6], Output[ik+7]);
+			printf("[%s] ", buf);
+
+			double d = 0.0;	
+			try{
+			    *reinterpret_cast<unsigned long long*>(&d) = std::stoull(buf, nullptr, 16);
 			}
-	
-			double thing_d = *(double*)buf;
-			printf("%f ", thing_d);
-	
-			//buff[j] = Output[ik];
+			catch(...){}
+
+			printf(" %f \n", d);
 		}
-	//	int NBins_H = HexToInt(buff, 4);
-	//	printf("\nN Bins [%s] = %i\n", buff,  NBins_H);
+
+		double buff = *(double*)(Output + 592 + 8);
+		printf("\nBuff = %f\n", buff);
 
 		printf("\n");
 
