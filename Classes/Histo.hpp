@@ -52,6 +52,7 @@ class Histo{
 	double Integrate(double low, double high);
 	int Draw();
 	int Draw(double low, double high);
+	int Draw(double low, double high, int opt);
 
 	private:
 		

@@ -74,6 +74,7 @@ Dans Notes:
 #include "Classes/Histo.hpp"
 
 #define CHUNK 16384
+#define cursup "\033[A"
 
 unsigned char* InflateData(unsigned char ** Input, int LenInput, int LenOutput){ //THIS DOESN'T WORK - I have no idea why, have to investigate further...
 
@@ -140,9 +141,9 @@ int main(int argc,char **argv){
 	junk2[0] = '\0';
 
 	RfEnd = RHead.GetfEnd();
-	RHead.Print();
+//	RHead.Print();
 	
-	printf("Bytes read = %u\n", BytesRead);
+//	printf("Bytes read = %u\n", BytesRead);
 	int num = RHead.GetfBegin();
 
 	if(BytesRead < num){
@@ -174,17 +175,25 @@ int main(int argc,char **argv){
 	BytesTotal = BytesTotal + BytesRead;
 
 	// READ HISTOGRAMS ==========
+	printf("\n\n");
 
 	int count =0;	
-	for(int hist = 0; hist < 2; hist++){
+	for(int hist = 0; hist < 20; hist++){
+		printf("HIST %.03i\n", hist);
+		printf("========\n\n");
 		Histo histTest;
 		BytesTotal += histTest.Read(infile, 0);
+		histTest.Draw();
+
 		count++;
 
 		if(BytesTotal >= RfEnd){
 			printf("Breaking %i > %i\n", BytesTotal, RfEnd);
 			break;
 		}
+
+		for(int l = 0; l < 24; l++) printf(cursup);
+
 
 	}
 
