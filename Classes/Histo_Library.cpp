@@ -31,6 +31,10 @@
 // int Histo::Draw()
 // int Histo::Draw(double low, double high)
 // int Histo::Draw(double low = -10101.01, double high = -10101.01, int opt = 0)
+// int Histo::MakeProbGraph(double low, double high, double low_l, double high_l)
+// double Histo::GetP(double l)
+// double Histo::GetZ(double l, double low, double high)
+// int Histo::SetPoint(double x_point, double y_point)
 
 
 
@@ -62,6 +66,13 @@
 Histo::Histo(){
 	X.clear();
 	Y.clear();
+	
+	lName  = '\0';
+	lTitle = '\0';
+	Name[0]  = '\0';
+	Title[0] = '\0';
+	memcpy(Type,"????",4);
+
 }
 
 
@@ -81,64 +92,42 @@ int Histo::Read(FILE *infile, int BytesTotal){
 	int BytesRead = 0;
 	KeyHeader Header2;
 	BytesRead = Header2.Read(infile);
-	Header2.Print();
+//	Header2.Print();
+
+	Name[0]  = '\0';
+	Title[0] = '\0';
+
+	lName = Header2.lObjname; 
+	memcpy(Name, Header2.ObjName, lName);
+	Name[lName] = '\0';
 	
-//	printf("Bytes read = %i\n", BytesRead);	
-//	printf("Total bytes read = %i\n\n", BytesTotal);	
-
-	//================================================================================================
-	//========================================================================= THIS AREA IS BROKEN ==
-	//================================================================================================
-		
-	//	printf("H2.NBytes = %i\nH2.KeyLen = %i\n", Header2.NBytes, Header2.KeyLen);
-
+	lTitle = Header2.lTitle;
+	memcpy(Title, Header2.Title, lTitle);
+	Title[lTitle] = '\0';
+	
 	unsigned char junk[9];
 	fread(&junk, sizeof(unsigned char), 9, infile);
-		
-		
+				
 	unsigned char Input[Header2.NBytes - Header2.KeyLen -9];
-	//unsigned char JunkBuffer[16];
-	
-	//int check1 = fread(JunkBuffer, sizeof(JunkBuffer), 1, infile);
-	//int check = fread(Input, sizeof(Input), 1, infile);
+
 	int check = fread(&Input, sizeof(unsigned char), (Header2.NBytes - Header2.KeyLen - 9), infile);
 	BytesRead = BytesRead + (Header2.NBytes - Header2.KeyLen);	
 		
 	if(strcmp((char*)Header2.ClassName, "TH1D") == 0){
 		
-	//	printf("Size of Input outside inflate = %lu\n", sizeof(Input));
-	//	printf("Size of check = %i\n", check);
-	//	printf("Input is:\n");
-	//	for(int ik = 0; ik < 50; ik++) printf("%c", Input[ik]);
-	//	printf("\n");
-		
-		//	InflateData(&Input, (Header2.NBytes - Header2.KeyLen), Header2.ObjLen);
-		
+		memcpy(Type,"TH1D",4);
 		int LenInput  = Header2.NBytes - Header2.KeyLen;
 		int LenOutput = Header2.ObjLen;// - Header2.KeyLen;
 		
 		unsigned char Output[LenOutput];
 		Output[0] = '\0';
-		
-	//	printf("The input  is %lu bytes long. Given as %i .\n",sizeof(Input), LenInput);
-	//	printf("The output is %lu bytes long. Given as %i .\n",sizeof(Output), LenOutput);
-	//	printf("Input is:\n");
-	//	for(int ik = 0; ik < 16; ik++){
-	//		printf("%.2x ", Input[ik]);
-			//buff[ik - 60] = Output[ik];
-	//	}
-	//	printf("\n");
 
-		// STEP 2.
-		// inflate b into c
-		// zlib struct
 		z_stream infstream;
 		infstream.zalloc = 0;
 		infstream.zfree  = 0;
 		infstream.opaque = 0;
 		
 		
-		// setup "b" as the input and "c" as the compressed output
 		infstream.avail_in = (uInt)LenInput; // size of input
 		infstream.next_in = Input; // input char array
 		infstream.avail_out = (uInt)LenOutput; // size of output
@@ -150,51 +139,12 @@ int Histo::Read(FILE *infile, int BytesTotal){
 		int ret;
 		
 		// the actual DE-compression work.
-		ret = inflateInit(&infstream);//, wbits);
-	//	printf("ZLIB Output ->->-> %s\n", infstream.msg);
-		
-		// https://github.com/klauspost/compress 
-		// My saviour??? We will see
-		
-	//	printf("ret = %i\n", ret);
-		
+		ret = inflateInit(&infstream);//, wbits);	
 		ret = inflate(&infstream, 4);
-	//	printf("ret = %i\n", ret);
-	//	printf("ZLIB Output ->->-> %s\n", infstream.msg);
 		ret = inflateEnd(&infstream);
-	//	printf("ret = %i\n", ret);
-		 
-	//	printf("ZLIB Output ->->-> %s\n", infstream.msg);
-
-	//	LZ4_decompress_safe((const char*)Input, (char*)Output, LenInput, LenOutput);	
-		
-	//	printf("Uncompressed size is: %lu\n", sizeof(Output));
-	//	printf("Uncompressed string is: %.15s\n", Output);
-	//	printf("Full Output is:\n");
-
-//		int okok = 0;
-//		for(int ik = 0; ik < sizeof(Output); ik+=8){
-//			printf("%.4i:%.4i: ",okok++, ik);
-//			for(int ll=0; ll < 8; ll++){
-//				printf("%.2x ", Output[ik + ll]);
-//			}
-
-//			printf("   |   ");
-//			for(int ll=0; ll < 8; ll++){
-//				if(Output[ik + ll] == '\n'){
-//					printf(".");
-//					continue;
-//				}
-//				printf("%c", Output[ik + ll]);
-//			}
-//			printf(" | \n");
-
-//		}
 
 		int ByteNumber = HexToInt(Output+8, 2);
 		int NDoubles   = HexToInt(Output+ByteNumber+12, 2);
-
-	//	printf("Byte[%i] claims %i doubles\n", ByteNumber, NDoubles); 
 
 		//Bytes [8-9] = Byte number of number of doubles in array
 		//Bytes [2-3] = Number of bytes in object (-4?)
@@ -204,10 +154,8 @@ int Histo::Read(FILE *infile, int BytesTotal){
 
 		//buff[0] = '\0';
 		for(int ik = DataStart; ik < sizeof(Output); ik+=8){
-		//	printf("%i ", HexToInt(Output + ik,8));//, Output[ik+1], Output[ik+2], Output[ik+3], Output[ik+4], Output[ik+5], Output[ik+6], Output[ik+7]);
 			char buf[64];
 			sprintf(buf, "0x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x",Output[ik], Output[ik+1], Output[ik+2], Output[ik+3], Output[ik+4], Output[ik+5], Output[ik+6], Output[ik+7]);
-			//printf("[%s] ", buf);
 
 			double d = 0.0;	
 			try{
@@ -215,28 +163,14 @@ int Histo::Read(FILE *infile, int BytesTotal){
 			}
 			catch(...){}
 
-//			printf(" %f \n", d);
-
 			X.push_back(binNo++);
 			Y.push_back(d);	
-
 		}
 
-//		double buff = *(double*)(Output + 592 + 8);
-//		printf("\nBuff = %f\n", buff);
-
-//		printf("\n");
-
 	}
-	
-	//	printf("%s",Output);
-	
-	//================================================================================================
-	//================================================================================================
-	//================================================================================================
+		
 	BytesTotal = BytesTotal + BytesRead;
-	
-	printf("Total bytes read = %i\n\n", BytesRead);	
+//	printf("Total bytes read = %i\n\n", BytesRead);	
 
 	return BytesRead;
 
@@ -262,7 +196,7 @@ int Histo::ReadTXT(FILE * infile){
 	ssize_t read;
 
 	// Loop over all the lines in the file
-	int  i = 0;
+	int  i = 0;	
 	while((read = getline(&line, &len, infile)) != -1) {
 		// Reat the trace data
 		double dat[2];
@@ -733,8 +667,20 @@ int Histo::Draw(double low = -10101.01, double high = -10101.01, int opt = 0){
 
 }
 
+int Histo::SetPoint(double x_point, double y_point){
 
-
+	for(int i = 0; i < X.size(); i++){
+		if(X[i] == x_point){
+			Y[i] = y_point;
+			return 1;
+		}
+	}
+	
+	X.push_back(x_point);
+	Y.push_back(y_point);
+	
+	return 1;
+}
 
 
 
@@ -744,10 +690,7 @@ int Histo::Draw(double low = -10101.01, double high = -10101.01, int opt = 0){
 // ADDITIONAL CODE
 
 
-/*
-
-
-double GetZ(double l, double low, double high){
+double Histo::GetZ(double l, double low, double high){
 
 	double a = exp(-low / l);
 	double b = exp(-high / l);
@@ -756,36 +699,32 @@ double GetZ(double l, double low, double high){
 
 }
 
-double GetP(double l){
+double Histo::GetP(double l){
 	return 1.0;
 }
 
 
-TGraph * MakeProbGraph(std::vector<double> data, double low, double high, double low_l, double high_l, int max){
+int Histo::MakeProbGraph(double low, double high, double low_l, double high_l, double scale){
 
 	int steps = 10000;
 	double dl = ( high_l - low_l ) / steps;
 	double sum = 0.0;
-	double N;
+	double N = X.size();
+	double newN = 0.0;
 
 	int infs = 0;
 	int nans = 0;
 	
-	if(max == -1){
-		N = data.size();
-	} else { 
-		N = max;
-	}
 
 	for(int i = 0; i < N; i++){
-		if(data[i] > high) continue;
-		if(data[i] < low)  continue;
-		sum += data[i];
-	//	printf("Da = %f\n", data[i]);
+		if(X[i] * scale > high) continue;
+		if(X[i] * scale < low)  continue;
+		sum += Y[i] * X[i] * scale;
+		newN += Y[i];
 	}
 
 
-	TGraph * gra = new TGraph(steps);
+	HGraph probGraph;
 
 	for(int hold = 0; hold < steps; hold++){
 
@@ -793,40 +732,32 @@ TGraph * MakeProbGraph(std::vector<double> data, double low, double high, double
 		double A = exp( - sum / l) * GetP(l);
 		double Z = GetZ(l, low, high);
 
-		double prob = A * 1.0 / pow((l * Z),N);
+		double prob = A * 1.0 / pow((l * Z),newN);
 
 		if(prob!= prob){ 
-//			printf("l = %f\nA = %f\nZ = %f\n", l, A, Z);
-//			printf("Prob = %f\n", prob);
 			nans++;
 			continue;
 		}
 
 		if(isinf(prob)){
-//			printf("l = %f\nA = %f\nZ = %f\n", l, A, Z);
-//			printf("Prob = %f\n", prob);
 			infs++;
 			continue;
 		}
-
-//		if(prob!= 0){ 
-//			printf("l = %f\nA = %f\nZ = %f\n", l, A, Z);
-//			printf("Prob = %f\n", prob);
-//		}
-
-
-		gra->SetPoint(hold,l, prob);
+		//printf("%f\n", prob * 10E60);
+		probGraph.SetPoint(l, prob * 10E34);
 
 	}
 
 //	printf("sum = %f\nN = %f\n", sum, N);
 	printf("Infs = %i\nNaNs = %i\n", infs, nans);
 
-	return gra;
+	
+	probGraph.Normalise();
+	probGraph.Draw(-10101.01, -10101.01);
+
+	return 1;
 
 }
-
-*/
 
 
 

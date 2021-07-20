@@ -62,6 +62,7 @@ Dans Notes:
 */
 
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -72,6 +73,7 @@ Dans Notes:
 #include "Classes/ROOTHeader.hpp"
 #include "Classes/KeyHeader.hpp"
 #include "Classes/Histo.hpp"
+#include "Classes/HGraph.hpp"
 
 #define CHUNK 16384
 #define cursup "\033[A"
@@ -177,13 +179,17 @@ int main(int argc,char **argv){
 	// READ HISTOGRAMS ==========
 	printf("\n\n");
 
+	std::vector<Histo> HistList;
+
 	int count =0;	
 	for(int hist = 0; hist < 20; hist++){
-		printf("HIST %.03i\n", hist);
-		printf("========\n\n");
+	//	printf("HIST %.03i\n", hist);
+	//	printf("========\n\n");
 		Histo histTest;
 		BytesTotal += histTest.Read(infile, 0);
-		histTest.Draw();
+	//	histTest.Draw();
+		if(strcmp(histTest.Type,"TH1D") == 0)
+		HistList.push_back(histTest);
 
 		count++;
 
@@ -192,7 +198,7 @@ int main(int argc,char **argv){
 			break;
 		}
 
-		for(int l = 0; l < 24; l++) printf(cursup);
+	//	for(int l = 0; l < 24; l++) printf(cursup);
 
 
 	}
@@ -200,6 +206,23 @@ int main(int argc,char **argv){
 	printf("RfEnd = %i\n", RfEnd);	
 	printf("TOTAL BYTES READ = %i\n", BytesTotal);
 	printf("TOTAL HISTS READ = %i\n", count);
+	printf("\n\n");
+
+	printf("HIST LIST\n");
+	printf("=========\n\n");
+	for(int i = 0; i < HistList.size(); i++){
+		printf("[%.02i] %s\t - %s\n", i, HistList[i].Name, HistList[i].Title);
+	}
+
+	printf("\n\n");
+
+	int choice;
+
+	std::cin >> choice;
+
+	HistList[choice].Draw();
+	HistList[choice].MakeProbGraph(0.1, 9.0, 0.5, 4, 0.001);
+
 
 
 

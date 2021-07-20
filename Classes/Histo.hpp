@@ -21,6 +21,8 @@
 #include <string.h>
 #include <vector>
 
+#include "HGraph.hpp"
+//#include "HGraph_Library.cpp"
 #include "KeyHeader.hpp"
 #include "HMatrix.hpp"
 
@@ -35,6 +37,13 @@ class Histo{
 
 	std::vector<double> X;
 	std::vector<double> Y;
+
+	unsigned char lName;
+	char Name[256];
+	unsigned char lTitle;
+	char Title[256];
+	
+	char Type[4];
 
 	// Destructor
 	~Histo(){}
@@ -53,6 +62,8 @@ class Histo{
 	int Draw();
 	int Draw(double low, double high);
 	int Draw(double low, double high, int opt);
+	int MakeProbGraph(double low, double high, double low_l, double high_l, double scale);
+	int SetPoint(double x_point, double y_point);
 
 	private:
 		
@@ -64,6 +75,8 @@ class Histo{
 	int HexToInt(unsigned char * Hex, int num);
 	int GS_Process(HMatrix * old_matrix);
 	int Proj(double * A, double * B, int NoRows, double * ret);
+	double GetP(double l);
+	double GetZ(double l, double low, double high);
 
 };
 
