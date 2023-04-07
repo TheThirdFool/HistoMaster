@@ -25,6 +25,8 @@
 //#include "HGraph_Library.cpp"
 #include "KeyHeader.hpp"
 #include "HMatrix.hpp"
+//#include "HistoGUI.hpp"
+//#include "HistoGUI_Library.cpp"
 
 #ifndef HISTO_H
 #define HISTO_H
@@ -37,6 +39,7 @@ class Histo{
 
 	std::vector<double> X;
 	std::vector<double> Y;
+	std::vector< std::vector<double> > Z;
 
 	unsigned char lName;
 	char Name[256];
@@ -44,6 +47,9 @@ class Histo{
 	char Title[256];
 	
 	char Type[4];
+	
+	double x_axis_max; 
+	double x_axis_min; 
 
 	// Destructor
 	~Histo(){}
@@ -64,6 +70,10 @@ class Histo{
 	int Draw(double low, double high, int opt);
 	int MakeProbGraph(double low, double high, double low_l, double high_l, double scale);
 	int SetPoint(double x_point, double y_point);
+	
+	double GetMaxX();
+	double GetMinX();
+	int GetNBins(){ return NoBins; }
 
 	private:
 		

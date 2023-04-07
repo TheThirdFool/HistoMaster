@@ -1,0 +1,44 @@
+#!/bin/bash
+
+
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+CY='\033[0;36m'
+
+echo ""
+echo -e "                 "-- Compiling ${RED}HistoMaster ${NC}--
+echo ""
+
+CXX=clang++
+
+INC="Classes/FileHeader.hpp Classes/ROOTHeader.hpp Classes/KeyHeader.hpp Classes/HGraph_Library.cpp Classes/Histo_Library.cpp Classes/Histo.hpp Classes/HMatrix.hpp Classes/HGraph.hpp Classes/HistoGUI_Library.cpp Classes/HistoGUI.hpp"
+OBJS="Classes/FileHeader.o Classes/ROOTHeader.o Classes/KeyHeader.o Classes/Histo.o Classes/Histo_Library.o Classes/HGraph_Library.o Classes/HistoGUI_Library.o"
+LFLAGS="-lutil -lboost_iostreams -lboost_system -lboost_filesystem -lX11 `root-config --cflags --glibs`"
+		#-lutil -lboost_iostreams -lboost_system -lboost_filesystem
+COMPFLAGS="--std=c++17 -O0 -g -D_GLIBCXX_DEBUG -fdiagnostics-color=auto -c"
+
+
+#CAMEXP="CamExpansion/CE_Library.cpp"
+
+#if $1 == "-cam"
+#	then
+#	INC+=$CAMEXP
+#fi
+
+
+
+echo -e "[${CY}compiling${NC}] $CXX -c " $INC
+$CXX -c $INC $COMPFLAGS
+
+#echo -e "[${CY}compiling${NC}] $CXX Root2Txt_Improved.C -o RT" $OBJS
+#$CXX Root2Txt_Improved.cxx -o RT -lz Histo_Library.o HGraph_Library.o $LFLAGS
+
+echo -e "[${CY}compiling${NC}] $CXX CNF2Root.cxx -o RT" $OBJS
+$CXX  CNF2Root.cxx -o C2R -lz Histo_Library.o HGraph_Library.o $LFLAGS
+
+
+
+
+echo
+echo -e ${RED}HistoMster${NC} is compiled.
+echo

@@ -53,6 +53,7 @@
 //#include "lz4.h"
 #include <vector>
 #include <string.h>
+#include "HistoGUI_Library.cpp"
 
 
 #include "gnuplot-iostream.h"
@@ -73,6 +74,9 @@ Histo::Histo(){
 	Title[0] = '\0';
 	memcpy(Type,"????",4);
 
+	x_axis_max = -10101;
+	x_axis_min = 10101;
+
 }
 
 
@@ -80,13 +84,14 @@ Histo::Histo(){
 int Histo::HexToInt(unsigned char * Hex, int num){
 	int fin = 0;
 	for(int i = 1; i <= num; i++){
+	//	printf("%.2x ", Hex[num-i]);
 		fin += pow(16, (i-1)*2) * Hex[num - i]; 
 	}
+	//printf("\n");
 	return fin;
 }
 
 
-// DFH - Read from the infile pointer. Can't decode data yet - but large memory leak fix may have cleared the way for this.
 int Histo::Read(FILE *infile, int BytesTotal){ 
 
 	int BytesRead = 0;
@@ -113,9 +118,12 @@ int Histo::Read(FILE *infile, int BytesTotal){
 	int check = fread(&Input, sizeof(unsigned char), (Header2.NBytes - Header2.KeyLen - 9), infile);
 	BytesRead = BytesRead + (Header2.NBytes - Header2.KeyLen);	
 		
+	memcpy(Type,(char*)Header2.ClassName,4);
+	//printf("%s\n", Name);
+		
 	if(strcmp((char*)Header2.ClassName, "TH1D") == 0){
 		
-		memcpy(Type,"TH1D",4);
+	//	memcpy(Type,"TH1D",4);
 		int LenInput  = Header2.NBytes - Header2.KeyLen;
 		int LenOutput = Header2.ObjLen;// - Header2.KeyLen;
 		
@@ -143,6 +151,10 @@ int Histo::Read(FILE *infile, int BytesTotal){
 		ret = inflate(&infstream, 4);
 		ret = inflateEnd(&infstream);
 
+//		for(int ii = 0; ii < LenOutput; ii+=8){
+//			printf("%i | %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x\n", ii, Output[ii], Output[ii+1], Output[ii+2], Output[ii+3], Output[ii+4],Output[ii+5],Output[ii+6],Output[ii+7]);
+//		}
+
 		int ByteNumber = HexToInt(Output+8, 2);
 		int NDoubles   = HexToInt(Output+ByteNumber+12, 2);
 
@@ -151,6 +163,10 @@ int Histo::Read(FILE *infile, int BytesTotal){
 
 		int DataStart = sizeof(Output) - (NDoubles * 8);
 		int binNo = 0;
+
+	//	printf("ByteNumber = %i\n", ByteNumber);
+	//	printf("nDoubles   = %i\n", NDoubles);
+	//	printf("Data start = %i\n", DataStart);
 
 		//buff[0] = '\0';
 		for(int ik = DataStart; ik < sizeof(Output); ik+=8){
@@ -167,10 +183,131 @@ int Histo::Read(FILE *infile, int BytesTotal){
 			Y.push_back(d);	
 		}
 
+	} else if(strcmp((char*)Header2.ClassName, "TH2D") == 0){
+	//	memcpy(Type,"TH1D",4);
+
+		int LenInput  = Header2.NBytes - Header2.KeyLen;
+		int LenOutput = Header2.ObjLen;// - Header2.KeyLen;
+	
+		
+		unsigned char Output[LenOutput];
+		Output[0] = '\0';
+
+		z_stream infstream;
+		infstream.zalloc = 0;
+		infstream.zfree  = 0;
+		infstream.opaque = 0;
+		
+		
+		infstream.avail_in = (uInt)LenInput; // size of input
+		infstream.next_in = Input; // input char array
+		infstream.avail_out = (uInt)LenOutput; // size of output
+		infstream.next_out = Output; // output char array
+		
+		
+		int wbits = 18;
+		
+		int ret;
+		
+		// the actual DE-compression work.
+		ret = inflateInit(&infstream);//, wbits);	
+		ret = inflate(&infstream, 4);
+		ret = inflateEnd(&infstream);
+
+		//for(int ii = 0; ii < 10+4+69+4+69+100; ii+=8){
+		//	printf("%i | %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x\n", ii, Output[ii], Output[ii+1], Output[ii+2], Output[ii+3], Output[ii+4],Output[ii+5],Output[ii+6],Output[ii+7]);
+		//}
+		int ByteNumber = HexToInt(Output+8, 2);
+
+		//Read first block
+		//Read position 20-21  = [off1]
+		int offset_sum = 20;
+		int off1 = HexToInt(Output + offset_sum, 2);
+
+		//Read 20+off1 = off2
+		offset_sum += off1 + 4;
+		off1 = HexToInt(Output + offset_sum, 2);
+
+		//Read 20 + off1 + off2  = off3
+		offset_sum += off1 + 4;
+		off1 = HexToInt(Output + offset_sum, 2);
+
+		//Read 20 + off1 + pff2 + off3 = off4 (add+4)
+		offset_sum += off1 + 4;
+		off1 = HexToInt(Output + offset_sum, 2);
+		offset_sum += off1 + 4 + 4;
+		
+		int lengthOfAxisChunk = HexToInt(Output + offset_sum, 2);
+		int startOfAxisChunk  = offset_sum + 2;
+
+		offset_sum += 6;
+		off1 = HexToInt(Output + offset_sum, 2);
+
+		offset_sum += off1 + 4 + 38 + 2;
+		int XBins = HexToInt(Output + offset_sum, 2);
+		
+
+		offset_sum = lengthOfAxisChunk + startOfAxisChunk + 8;
+		off1 = HexToInt(Output + offset_sum, 2);
+
+		offset_sum += off1 + 4 + 38 + 2;
+		int YBins = HexToInt(Output + offset_sum, 2);
+		
+		int NDoubles   = XBins * YBins;
+
+		//Bytes [8-9] = Byte number of number of doubles in array
+		//Bytes [2-3] = Number of bytes in object (-4?)
+
+		int DataStart = sizeof(Output) - (NDoubles * 8);
+		int binNoX = 0;
+		int binNoY = 0;
+		for(int x_i = 0; x_i < XBins; x_i++){
+			std::vector<double> temp_vect;
+			temp_vect.resize(YBins);
+			Z.push_back(temp_vect);
+		}
+		X.resize(XBins);
+		Y.resize(YBins);
+		
+	//	printf("%s:\n", Name);
+	//	printf("ByteNumber = %i\n", ByteNumber);
+	//	printf("Data start = %i\n", DataStart);
+	//	printf("XBins = %i\n", XBins);
+	//	printf("YBins = %i\n", YBins);
+		
+		//buff[0] = '\0';
+		int counter = 0;
+		
+		for(int ik = DataStart; ik < sizeof(Output); ik+=8){
+			char buf[64];
+			sprintf(buf, "0x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x",Output[ik], Output[ik+1], Output[ik+2], Output[ik+3], Output[ik+4], Output[ik+5], Output[ik+6], Output[ik+7]);
+	//		printf("0x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x",Output[ik], Output[ik+1], Output[ik+2], Output[ik+3], Output[ik+4], Output[ik+5], Output[ik+6], Output[ik+7]);
+
+			double d = 0.0;	
+			try{
+			    *reinterpret_cast<unsigned long long*>(&d) = std::stoull(buf, nullptr, 16);
+			}
+			catch(...){}
+
+	//		printf("double = %f\n", d);
+
+			binNoX = div(counter, XBins).rem;
+			binNoY = div(counter, XBins).quot;
+	//		printf("bin [%i] [%i]\n", binNoX, binNoY);
+			counter++;
+
+			X[binNoX] = binNoX;
+			Y[binNoY] = binNoY;	
+	//		printf("some things are set!\n");
+			Z[binNoX][binNoY] = d;
+	//		printf("All things are set!\n");
+		}
+
 	}
 		
 	BytesTotal = BytesTotal + BytesRead;
-//	printf("Total bytes read = %i\n\n", BytesRead);	
+	//printf("Total bytes read = %i\n\n", BytesRead);	
+	printf("Name [%s] read\n", Name);
 
 	return BytesRead;
 
@@ -515,11 +652,40 @@ int Histo::Fit(char * func, int noIterations){
 	return 1;
 }
 
+double Histo::GetMaxX(){
+	if(x_axis_max != -10101) {
+		return x_axis_max;
+	} else {
+
+		x_axis_max = X[0];
+		for(int i = 1; i < X.size(); i++){
+			if(X[i] > x_axis_max) x_axis_max = X[i];
+		}
+
+		return x_axis_max;
+	}
+}
+
+double Histo::GetMinX(){
+	if(x_axis_min != 10101) {
+		return x_axis_min;
+	} else {
+
+		x_axis_min = X[0];
+		for(int i = 1; i < X.size(); i++){
+			if(X[i] < x_axis_min) x_axis_min = X[i];
+		}
+
+		return x_axis_min;
+	}
+}
+
 
 // ================== DRAW X & Y (with gnuplot)
 
 int Histo::Draw(){
 
+/*
 	Gnuplot gp;
 
 	std::vector<std::pair<double, double> > xy_pts;
@@ -548,6 +714,33 @@ int Histo::Draw(){
 	//gp.send1d(Y);
 	std::cout << "Press enter to exit." << std::endl;
 	std::cin.get();
+
+*/
+
+	HistoGUI gui;
+
+	//std::vector<double> x;
+	//std::vector<double> y;
+
+	//for(int i = 0; i < 25; i++){
+	//	x.push_back( i );
+	//	y.push_back( pow(i, 0.5) );
+	//}
+
+	if(strcmp(Type, "TH2D") == 0){
+		gui.Set2D(true);
+		gui.SetData2D(X,Y,Z);
+	} else {
+		gui.Set2D(false);
+		gui.SetData(X,Y);
+	}
+
+	gui.Init();
+	gui.Loop();
+	std::cout << "Press enter to exit." << std::endl;
+	std::cin.get();
+	gui.Close();
+
 
 	return 1;
 

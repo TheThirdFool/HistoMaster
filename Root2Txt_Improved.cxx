@@ -74,6 +74,7 @@ Dans Notes:
 #include "Classes/KeyHeader.hpp"
 #include "Classes/Histo.hpp"
 #include "Classes/HGraph.hpp"
+#include "Classes/HistoGUI.hpp"
 
 #define CHUNK 16384
 #define cursup "\033[A"
@@ -182,14 +183,17 @@ int main(int argc,char **argv){
 	std::vector<Histo> HistList;
 
 	int count =0;	
-	for(int hist = 0; hist < 20; hist++){
+	for(int hist = 0; hist < 6; hist++){
 	//	printf("HIST %.03i\n", hist);
 	//	printf("========\n\n");
 		Histo histTest;
 		BytesTotal += histTest.Read(infile, 0);
 	//	histTest.Draw();
-		if(strcmp(histTest.Type,"TH1D") == 0)
+		//printf("Type = %s\n", histTest.Type);
+		if(strcmp(histTest.Type,"TH1D") == 0 or strcmp(histTest.Type,"TH2D") == 0)
+		//printf("[%.02i] %s\t - %s (%s)\n", hist, histTest.Name, histTest.Title, histTest.Type);
 		HistList.push_back(histTest);
+		//if(strcmp(histTest.Type,"TH2D") == 0) break;
 
 		count++;
 
@@ -211,7 +215,7 @@ int main(int argc,char **argv){
 	printf("HIST LIST\n");
 	printf("=========\n\n");
 	for(int i = 0; i < HistList.size(); i++){
-		printf("[%.02i] %s\t - %s\n", i, HistList[i].Name, HistList[i].Title);
+		printf("[%.02i] %s\t - %s (%s)\n", i, HistList[i].Name, HistList[i].Title, HistList[i].Type);
 	}
 
 	printf("\n\n");
@@ -219,9 +223,9 @@ int main(int argc,char **argv){
 	int choice;
 
 	std::cin >> choice;
-
 	HistList[choice].Draw();
-	HistList[choice].MakeProbGraph(0.1, 9.0, 0.5, 4, 0.001);
+
+	//HistList[choice].MakeProbGraph(0.1, 9.0, 0.5, 4, 0.001);
 
 
 
