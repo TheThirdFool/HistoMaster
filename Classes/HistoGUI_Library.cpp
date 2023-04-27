@@ -549,12 +549,12 @@ int HistoGUI::Loop(){
 			int mouse_x = evt.xmotion.x;
 			int mouse_y = evt.xmotion.y;
 
-			if(!Draw2D_On){
-				XClearWindow(disp, wind);
-				DrawCrosshairs(old_mouse_x, old_mouse_y);
-				DrawCrosshairs(mouse_x, mouse_y);
-				DrawData(old_xl, old_yl, old_xh, old_yh);
-			}
+			//if(!Draw2D_On){
+			//	XClearWindow(disp, wind);
+			//	DrawCrosshairs(old_mouse_x, old_mouse_y);
+			//	DrawCrosshairs(mouse_x, mouse_y);
+			//	DrawData(old_xl, old_yl, old_xh, old_yh);
+			//}
 
 		} else if (evt.type == MotionNotify and MousePressed2){
 

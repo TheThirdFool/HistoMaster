@@ -75,10 +75,11 @@ class Histo{
 	double GetMinX();
 	int GetNBins(){ return NoBins; }
 
+	char energy_unit[3];
+
 	private:
 		
 	int NoBins;
-
 
 	double CNF_Energy(int x, float * A);
 	int ReadString(char* String, int row, double * dat); 

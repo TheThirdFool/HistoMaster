@@ -63,7 +63,8 @@ int main(int argc,char **argv){
 	sprintf(htitle, "CNF to ROOT from HM");
 
 	TH1D * output_h = new TH1D(hname, htitle, nbins, min, max);
-		
+	output_h->GetXaxis()->SetTitle(histTest.energy_unit);
+	
 	for(int i = 0; i < histTest.X.size(); i++){
 		output_h -> SetBinContent(i, histTest.Y[i]);
 	}

@@ -425,14 +425,26 @@ int Histo::ReadCNF(FILE * infile){
 		Cal_Vals[i] = (*(float*)tmp16)/4.;
 	}
 
-	printf("Calibration = %f + %f * x + %f * x^2 + %f * x^3\n", Cal_Vals[0], Cal_Vals[1], Cal_Vals[2], Cal_Vals[3]);
+	fseek(infile, (cal_offs + 0x5c), SEEK_SET);
+	fread(energy_unit, sizeof(char), 3, infile);
+
+	printf("Calibration = %f + %f * x + %f * x^2 + %f * x^3 [%s]\n", Cal_Vals[0], Cal_Vals[1], Cal_Vals[2], Cal_Vals[3], energy_unit);
+
+	// Find the number of bins
+	char n_channels_read;
+	fseek(infile, (param_offs + 0x00ba), SEEK_SET);
+	fread(&n_channels_read, sizeof(char), 8, infile);
+	int n_channels = (int) n_channels_read * 256;
+	printf("nbins = %i\n", n_channels);
+
+	
 
 	// ==============================================================================
 
     // Makes i-offset bins and sets to data[i] values
-    int offset = data.size() - 4096;
+    int offset = data.size() - n_channels;
     for(int i=offset +1;i < data.size();i++) {
-        X.push_back(CNF_Energy(i-offset, Cal_Vals));
+        X.push_back(CNF_Energy((i-offset), Cal_Vals));
 		Y.push_back(data[i]);
     }
 
