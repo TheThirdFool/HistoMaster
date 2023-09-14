@@ -76,6 +76,7 @@ int HistoGUI::Init(){
 	xcolour_veryred.flags = DoRed | DoGreen | DoBlue;
 	XAllocColor(disp, cmap, &xcolour_veryred);
 
+	/*
 	for(int i = 0; i < 10; i++){	
 		PixelColour[i].red   = 65535; 
 		PixelColour[i].green = 65535 * (10 - i)/ 10; 
@@ -83,9 +84,56 @@ int HistoGUI::Init(){
 		PixelColour[i].flags = DoRed | DoGreen | DoBlue;
 		XAllocColor(disp, cmap, &PixelColour[i]);
 	}
+	*/
+
+	for(int i = 0; i < 20; i++){
+		PixelColour[i].red   = 65535 * ReturnViridis(i, 0) / 255;
+		PixelColour[i].green = 65535 * ReturnViridis(i, 1) / 255;
+		PixelColour[i].blue  = 65535 * ReturnViridis(i, 2) / 255;
+		PixelColour[i].flags = DoRed | DoGreen | DoBlue;
+		XAllocColor(disp, cmap, &PixelColour[i]);
+	}
+
+	scaleZ  = 1.0;
+	drawLog = false;
 
 	return 1;
 
+}
+
+int HistoGUI::ReturnViridis(int i, int j){
+    int viridis[20][3] = {{253, 231, 37 },{218, 227, 25},{181, 222, 43},
+                          {144, 215, 67 },{110, 206, 88},{78, 195, 107},
+                          {53,  183, 121},{37,  171,130},{31, 158, 137},
+                          {33,  145, 140},{38,  130,142},{43, 117, 142},
+                          {49,  104, 142},{55,  90, 140},{62,  73, 137},
+                          {68,  57,  131},{72,  40, 120},{72,  22, 104},
+                          {68,  1,    84},{255, 255, 255}};
+    /*
+    viridis[19] = {253, 231, 37 };
+    viridis[18] = {218, 227, 25 };
+    viridis[17] = {181, 222, 43 };
+    viridis[16] = {144, 215, 67 };
+    viridis[15] = {110, 206, 88 };
+    viridis[14] = {78,  195, 107};
+    viridis[13] = {53,  183, 121};
+    viridis[12] = {37,  171, 130};
+    viridis[11] = {31,  158, 137};
+    viridis[10] = {33,  145, 140};
+    viridis[9] = {38,  130,  142};
+    viridis[8] = {43,  117,  142};
+    viridis[7] = {49,  104,  142};
+    viridis[6] = {55,  90,   140};
+    viridis[5] = {62,  73,   137};
+    viridis[4] = {68,  57,   131};
+    viridis[3] = {72,  40,   120};
+    viridis[2] = {72,  22,   104};
+    viridis[1] = {68,  1,    84 };
+    viridis[0] = {255,  255, 255};
+    */
+
+	//printf("returning viridis [%i][%i] = %i\n",i,j, viridis[19-i][j]);
+    return viridis[19-i][j];
 }
 
 int HistoGUI::DrawCrosshairs(int mouse_x, int mouse_y){
@@ -184,8 +232,18 @@ int HistoGUI::DrawData(double x_low_win, double y_low_win, double x_hi_win, doub
 		for(int i=0; i<x.size(); i++){
 			if(x[i] > max_x) max_x = x[i];
 			if(x[i] < min_x) min_x = x[i];
-			if(y[i] > max_y) max_y = y[i];
-			if(y[i] < min_y) min_y = y[i];
+
+			if(drawLog){	
+				if(y[i] <= 0){
+					min_y = 0;
+					continue;
+				}
+				if(log(y[i]) > max_y) max_y = log(y[i]);
+				if(log(y[i]) < min_y) min_y = log(y[i]);
+			} else { 
+				if(y[i] > max_y) max_y = y[i];
+				if(y[i] < min_y) min_y = y[i];
+			}
 		}
 		//printf(" max_x = %f\n", max_x );
 		//printf(" max_y = %f\n", max_y );
@@ -233,9 +291,22 @@ int HistoGUI::DrawData(double x_low_win, double y_low_win, double x_hi_win, doub
 
 		for(int i=0; i < x.size() - 2; i++){
 			x_wid  = (x[i] + x_offset) / width_scale;
-			y_wid  = (y[i] + y_offset) / height_scale;
 			x_wid2 = (x[i + 1] + x_offset) / width_scale;
-			y_wid2 = (y[i + 1] + y_offset) / height_scale;
+			if(drawLog){
+				if(y[i] <= 0){
+					y_wid = 0;
+				} else {
+					y_wid  = (log(y[i]) + y_offset) / height_scale;
+				}
+				if(y[i+1] <= 0){
+					y_wid2 = 0;
+				} else {
+					y_wid2 = (log(y[i + 1]) + y_offset) / height_scale;
+				}
+			} else {
+				y_wid  = (y[i] + y_offset) / height_scale;
+				y_wid2 = (y[i + 1] + y_offset) / height_scale;
+			}
 			//printf("(%f, %f), (%f,%f)\n", x_wid,y_wid,x_wid2,y_wid2);
 			XDrawLine(disp, wind, DefaultGC(disp, screen), x_wid, y_wid, x_wid2, y_wid2);
 			XFillRectangle(disp, wind, DefaultGC(disp, screen), x_wid -2, y_wid -2, 4, 4);
@@ -286,9 +357,24 @@ int HistoGUI::DrawData(double x_low_win, double y_low_win, double x_hi_win, doub
 	
 		for(int i=0; i < x.size() - 2; i++){
 			x_wid  = (x[i] + x_offset) / width_scale;
-			y_wid  = (y[i] + y_offset) / height_scale;
+			//y_wid  = (y[i] + y_offset) / height_scale;
 			x_wid2 = (x[i + 1] + x_offset) / width_scale;
-			y_wid2 = (y[i + 1] + y_offset) / height_scale;
+			//y_wid2 = (y[i + 1] + y_offset) / height_scale;
+			if(drawLog){
+				if(y[i] <= 0){
+					y_wid = 0;
+				} else {
+					y_wid  = (log(y[i]) + y_offset) / height_scale;
+				}
+				if(y[i+1] <= 0){
+					y_wid2 = 0;
+				} else {
+					y_wid2 = (log(y[i + 1]) + y_offset) / height_scale;
+				}
+			} else {
+				y_wid  = (y[i] + y_offset) / height_scale;
+				y_wid2 = (y[i + 1] + y_offset) / height_scale;
+			}
 		//	printf("(%f, %f), (%f,%f)\n", x_wid,y_wid,x_wid2,y_wid2);
 			XDrawLine(disp, wind, DefaultGC(disp, screen), x_wid, y_wid, x_wid2, y_wid2);
 			XFillRectangle(disp, wind, DefaultGC(disp, screen), x_wid -2, y_wid -2, 4, 4);
@@ -335,9 +421,16 @@ int HistoGUI::DrawData2D(double x_low_win, double y_low_win, double x_hi_win, do
 
 		for(int i=0; i<x.size(); i++){
 			for(int j=0; j<y.size(); j++){
-				if(z[i][j] > max_cont) max_cont = z[i][j];
+				if(drawLog) {
+					if(z[i][j] <= 0) continue;
+					if(log(z[i][j]) > max_cont) max_cont = log(z[i][j]);
+				} else {
+					if(z[i][j] > max_cont) max_cont = z[i][j];
+				}
 			}
 		}
+
+		max_cont *= scaleZ;
 
 		//printf(" max_x = %f\n", max_x );
 		//printf(" max_y = %f\n", max_y );
@@ -375,6 +468,14 @@ int HistoGUI::DrawData2D(double x_low_win, double y_low_win, double x_hi_win, do
 				if(y_wid > max_y) y_wid = max_y;
 				if(y_wid < min_y) y_wid = min_y;
 				int colindex = (int) 10 * z[(int)x_wid][(int)y_wid] / max_cont; 
+				if(drawLog){
+					if(z[(int)x_wid][(int)y_wid] <= 0){
+						 colindex = 0;
+					} else {
+ 						colindex = (int) 20 * log(z[(int)x_wid][(int)y_wid]) / max_cont;
+					}
+				}
+				if(colindex > 19) colindex = 19;
 				//int colindex = (int) 10 * i / width; 
 				//if(colindex > 0){
 				//printf("Colour = %i\n",colindex);
@@ -411,12 +512,12 @@ int HistoGUI::DrawData2D(double x_low_win, double y_low_win, double x_hi_win, do
 	} else {
 		//double x_low_win, double y_low_win, double x_hi_win, double y_hi_win
 
-		double max_cont = z[0][0];	
-		for(int i=0; i<x.size(); i++){
-			for(int j=0; j<y.size(); j++){
-				if(z[i][j] > max_cont) max_cont = z[i][j];
-			}
-		}
+		//double max_cont = z[0][0];	
+		//for(int i=0; i<x.size(); i++){
+		//	for(int j=0; j<y.size(); j++){
+		//		if(z[i][j] > max_cont) max_cont = z[i][j];
+		//	}
+		//}
 
 		width_scale = (x_hi_win - x_low_win) / width;
 		x_offset = -1.0 * x_low_win;
@@ -438,6 +539,22 @@ int HistoGUI::DrawData2D(double x_low_win, double y_low_win, double x_hi_win, do
 		double binwidth_x = 0.8 * width_scale  / x.size();
 		double binwidth_y = 0.8 * height_scale / y.size();
 
+		double max_cont = z[0][0];	
+		for(int i=0; i<width; i++){
+			x_wid  = (i * width_scale) - x_offset;
+			for(int j=0; j<height; j++){
+				y_wid  = (j * height_scale) - y_offset;
+				if(drawLog) {
+					if(z[(int)x_wid][(int)y_wid] <= 0) continue;
+					if(log(z[(int)x_wid][(int)y_wid]) > max_cont) max_cont = log(z[(int)x_wid][(int)y_wid]);
+				} else {
+					if(z[(int)x_wid][(int)y_wid] > max_cont) max_cont = z[(int)x_wid][(int)y_wid];
+				}
+			}
+		}
+
+		max_cont *= scaleZ;
+
 		for(int i=0; i < width; i++){
 			x_wid  = (i * width_scale) - x_offset;
 			if(x_wid > max_x) x_wid = max_x;
@@ -448,6 +565,14 @@ int HistoGUI::DrawData2D(double x_low_win, double y_low_win, double x_hi_win, do
 				if(y_wid > max_y) y_wid = max_y;
 				if(y_wid < min_y) y_wid = min_y;
 				int colindex = (int) 10 * z[(int)x_wid][(int)y_wid] / max_cont; 
+				if(drawLog){
+					if(z[(int)x_wid][(int)y_wid] <= 0){
+						 colindex = 0;
+					} else {
+						colindex = (int)220 * log(z[(int)x_wid][(int)y_wid]) / max_cont;
+					}
+				}
+				if(colindex > 19) colindex = 19;
 				//int colindex = (int) 10 * i / width; 
 				//if(colindex > 0){
 				//printf("Colour = %i\n",colindex);
@@ -568,9 +693,26 @@ int HistoGUI::Loop(){
 
 			printf("Key pressed = %x\n", evt.xkey.keycode);
 			if(evt.xkey.keycode == 0x41 or evt.xkey.keycode == 0x39){
+				scaleZ = 1.0;
 				XClearWindow(disp, wind);
 				DrawData(-1,-1,-1,-1);
 				
+			}else if(evt.xkey.keycode == 0x2b){
+				scaleZ *= 0.9;
+				XClearWindow(disp, wind);
+				DrawData(old_xl, old_yl, old_xh, old_yh);
+			}else if(evt.xkey.keycode == 0x27){
+				scaleZ *= 1.1;
+				XClearWindow(disp, wind);
+				DrawData(old_xl, old_yl, old_xh, old_yh);
+			}else if(evt.xkey.keycode == 0x2d){
+				if(drawLog){
+					drawLog = false;
+				} else {
+					drawLog = true;
+				}
+				XClearWindow(disp, wind);
+				DrawData(old_xl, old_yl, old_xh, old_yh);
 			} else {
 				break;	
 			}
@@ -579,4 +721,82 @@ int HistoGUI::Loop(){
 
 	return 1;
 }
+
+
+
+
+
+
+
+int HistoGUI::Help(){
+
+	printf("\n");
+	printf("-- HistoGUI help --\n");
+	printf("\n");
+	printf("click          - Crosshairs\n");
+	printf("click and drag - Zoom into region\n");
+	printf("\n");
+	printf("l - Log plot (y in 1D, z in 2D)\n");
+	printf("p - Reduce z scale in 2D\n");
+	printf("o - increase z scale in 2D\n");
+	printf("q - quit\n");
+	printf("\n");
+	printf("--\n");
+	printf("\n");
+	printf("For help for using HistoGUI in your code run 'HelpCode()'.\n");
+	printf("\n");
+	printf("----\n");
+	printf("\n");
+
+	return 0;
+}
+
+
+int HistoGUI::HelpCode(){
+
+	printf("\n");
+	printf("-- HistoGUI help code --\n");
+	printf("\n");
+	printf("Create a HistoGUI object with:\n");
+	printf("\tHistoGUI gui;\n");
+	printf("\n");
+	printf("Set the data:\n");
+	printf("\tgui.Set2D(false);\n");
+	printf("\tgui.SetData((std::vector<double>) X, (std::vector<double>)Y );\n");
+	printf("\n");
+	printf("Or if the data is 2D:\n");
+	printf("\tgui.Set2D(true);\n");
+	printf("\tgui.SetData2D(X,Y,Z);\n");
+	printf("\n");
+	printf("Then when you want to display the plot:\n");
+	printf("\tgui.Init();\n");
+	printf("\tgui.Loop();\n");
+	printf("\n");
+	printf("The loop will end when the user quits HistoGUI, after which use:\n");
+	printf("\tgui.Close();\n");
+	printf("\n");
+	printf("This will complete the gui processes.\n");
+	printf("\n");
+	printf("----\n");
+	printf("\n");
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

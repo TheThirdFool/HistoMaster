@@ -125,6 +125,13 @@ unsigned char* InflateData(unsigned char ** Input, int LenInput, int LenOutput){
 
 int main(int argc,char **argv){
 
+	if(strcmp(argv[1],"-h") == 0){
+		HistoGUI gui;
+		gui.Help();
+		return 1;
+	}
+
+
 	//============================================= Open File
 	FILE *infile  = fopen(argv[1], "rb"); 
 

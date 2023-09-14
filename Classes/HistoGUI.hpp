@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <vector>
 #include <cmath> 
 	
@@ -30,7 +31,7 @@ class HistoGUI{
 	XColor xcolour_veryred;
 	Colormap cmap;
 
-	XColor PixelColour[10];
+	XColor PixelColour[20];
 
 	std::vector<double> x;
 	std::vector<double> y;
@@ -55,6 +56,8 @@ class HistoGUI{
 	double height_scale;
 	double y_offset;
 	bool Draw2D_On;
+	double scaleZ;
+	bool drawLog;
 
 	double old_xl, old_xh, old_yl, old_yh;
 	double old_mouse_x, old_mouse_y;
@@ -71,6 +74,10 @@ class HistoGUI{
 	int DrawData2D(double x_low_win, double y_low_win, double x_hi_win, double y_hi_win);
 	
 	bool Set2D( bool a ){ Draw2D_On = a; return a;}
+
+	int Help();
+	int HelpCode();
+	int ReturnViridis(int i, int j);
 
 };
 
