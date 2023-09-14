@@ -382,7 +382,6 @@ int Histo::ReadCNF(FILE * infile){
     }
 
 
-
 	// DFH - Calibrate
 	// ==============================================================================
 
@@ -440,7 +439,6 @@ int Histo::ReadCNF(FILE * infile){
 	
 
 	// ==============================================================================
-
     // Makes i-offset bins and sets to data[i] values
     int offset = data.size() - n_channels;
     for(int i=offset +1;i < data.size();i++) {
