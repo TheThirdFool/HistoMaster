@@ -62,6 +62,7 @@ Dans Notes:
 */
 
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -72,8 +73,11 @@ Dans Notes:
 #include "Classes/ROOTHeader.hpp"
 #include "Classes/KeyHeader.hpp"
 #include "Classes/Histo.hpp"
+#include "Classes/HGraph.hpp"
+#include "Classes/HistoGUI.hpp"
 
 #define CHUNK 16384
+#define cursup "\033[A"
 
 unsigned char* InflateData(unsigned char ** Input, int LenInput, int LenOutput){ //THIS DOESN'T WORK - I have no idea why, have to investigate further...
 
@@ -121,6 +125,13 @@ unsigned char* InflateData(unsigned char ** Input, int LenInput, int LenOutput){
 
 int main(int argc,char **argv){
 
+	if(strcmp(argv[1],"-h") == 0){
+		HistoGUI gui;
+		gui.Help();
+		return 1;
+	}
+
+
 	//============================================= Open File
 	FILE *infile  = fopen(argv[1], "rb"); 
 
@@ -140,9 +151,9 @@ int main(int argc,char **argv){
 	junk2[0] = '\0';
 
 	RfEnd = RHead.GetfEnd();
-	RHead.Print();
+//	RHead.Print();
 	
-	printf("Bytes read = %u\n", BytesRead);
+//	printf("Bytes read = %u\n", BytesRead);
 	int num = RHead.GetfBegin();
 
 	if(BytesRead < num){
@@ -174,11 +185,23 @@ int main(int argc,char **argv){
 	BytesTotal = BytesTotal + BytesRead;
 
 	// READ HISTOGRAMS ==========
+	printf("\n\n");
+
+	std::vector<Histo> HistList;
 
 	int count =0;	
-	for(int hist = 0; hist < 2; hist++){
+	for(int hist = 0; hist < 6; hist++){
+	//	printf("HIST %.03i\n", hist);
+	//	printf("========\n\n");
 		Histo histTest;
 		BytesTotal += histTest.Read(infile, 0);
+	//	histTest.Draw();
+		//printf("Type = %s\n", histTest.Type);
+		if(strcmp(histTest.Type,"TH1D") == 0 or strcmp(histTest.Type,"TH2D") == 0)
+		//printf("[%.02i] %s\t - %s (%s)\n", hist, histTest.Name, histTest.Title, histTest.Type);
+		HistList.push_back(histTest);
+		//if(strcmp(histTest.Type,"TH2D") == 0) break;
+
 		count++;
 
 		if(BytesTotal >= RfEnd){
@@ -186,11 +209,31 @@ int main(int argc,char **argv){
 			break;
 		}
 
+	//	for(int l = 0; l < 24; l++) printf(cursup);
+
+
 	}
 
 	printf("RfEnd = %i\n", RfEnd);	
 	printf("TOTAL BYTES READ = %i\n", BytesTotal);
 	printf("TOTAL HISTS READ = %i\n", count);
+	printf("\n\n");
+
+	printf("HIST LIST\n");
+	printf("=========\n\n");
+	for(int i = 0; i < HistList.size(); i++){
+		printf("[%.02i] %s\t - %s (%s)\n", i, HistList[i].Name, HistList[i].Title, HistList[i].Type);
+	}
+
+	printf("\n\n");
+
+	int choice;
+
+	std::cin >> choice;
+	HistList[choice].Draw();
+
+	//HistList[choice].MakeProbGraph(0.1, 9.0, 0.5, 4, 0.001);
+
 
 
 
