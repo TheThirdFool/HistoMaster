@@ -736,6 +736,7 @@ int Histo::Draw(){
 	//	x.push_back( i );
 	//	y.push_back( pow(i, 0.5) );
 	//}
+	gui.Help();
 
 	if(strcmp(Type, "TH2D") == 0){
 		gui.Set2D(true);
