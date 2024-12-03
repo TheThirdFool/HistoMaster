@@ -11,7 +11,7 @@ echo ""
 
 CXX=clang++
 
-INC="Classes/FileHeader.hpp Classes/ROOTHeader.hpp Classes/KeyHeader.hpp Classes/HGraph_Library.cpp Classes/Histo_Library.cpp Classes/Histo.hpp Classes/HMatrix.hpp Classes/HGraph.hpp Classes/HistoGUI_Library.cpp Classes/HistoGUI.hpp"
+INC="Classes/FileHeader.hpp Classes/ROOTHeader.hpp Classes/KeyHeader.hpp Classes/HGraph_Library.cpp Classes/Histo_Library.cpp Classes/Histo.hpp Classes/HMatrix.hpp Classes/HGraph.hpp Classes/HistoGUI.hpp Classes/HistoGUI_Library.cpp"
 OBJS="Classes/FileHeader.o Classes/ROOTHeader.o Classes/KeyHeader.o Classes/Histo.o Classes/Histo_Library.o Classes/HGraph_Library.o Classes/HistoGUI_Library.o"
 LFLAGS="-lutil -lboost_iostreams -lboost_system -lboost_filesystem -lX11"
 		#-lutil -lboost_iostreams -lboost_system -lboost_filesystem
